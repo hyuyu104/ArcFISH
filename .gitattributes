@@ -1,0 +1,5 @@
+# prevents .ipynb from dominating line counts
+# https://github.com/pytorch/vision/issues/2771
+*.ipynb  text
+
+*.ipynb linguist-documentation
