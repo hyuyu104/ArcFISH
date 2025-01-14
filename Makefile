@@ -17,15 +17,13 @@ html:
 	make clean; make html; cd ..
 
 git-add:
-	git add -A notebooks
 	git add -A snapfish2
+	git add -A docs/source
 	git add LICENSE
 	git add .gitattributes
 	git add Makefile
 	git add README.md
 	git add pyproject.toml
-	git add 123ACElog/log.py
-	git add 123ACElog/utils.py
 
 log:
 	python 123ACElog/log.py
@@ -44,9 +42,9 @@ to-server:
 	hongyuyu@longleaf.unc.edu:\
 	/proj/yunligrp/users/hongyuyu/AxisWiseTest/123ACElog/.
 
-	rsync -a --ignore-existing data \
+	rsync -a --ignore-existing data/* \
 	hongyuyu@longleaf.unc.edu:\
-	/proj/yunligrp/users/hongyuyu/AxisWiseTest
+	/proj/yunligrp/users/hongyuyu/AxisWiseTest/data/
 
 # Will not overwrite existing files
 from-server:
