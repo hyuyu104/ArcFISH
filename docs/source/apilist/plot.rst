@@ -1,5 +1,5 @@
-Plotting modules
-================
+Plotting functions
+==================
 
 .. automodapi:: snapfish2.plot.base
    :no-inheritance-diagram:

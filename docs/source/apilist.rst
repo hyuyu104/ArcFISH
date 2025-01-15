@@ -5,5 +5,7 @@ API Reference
    :maxdepth: 2
 
    apilist/utils
-   apilist/analysis
+   apilist/loop
+   apilist/domain
+   apilist/simulate
    apilist/plot
