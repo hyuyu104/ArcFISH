@@ -13,3 +13,4 @@ from . import plot as pl
 
 from .analysis import loop
 from .analysis import domain
+from .analysis import simulate

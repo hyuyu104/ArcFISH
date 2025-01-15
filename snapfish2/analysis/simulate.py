@@ -4,6 +4,65 @@ from scipy import stats
 from statsmodels.stats import multitest as multi
 
 
+def simulate_mc(nstate:int, p:int, m:float) -> np.array:
+    """Simulate a Markov chain of length `p`.
+
+    Parameters
+    ----------
+    nstate : int
+        Number of states of the chain.
+    p : int
+        The length of the chain.
+    m : float
+        How likely the chain will stay at a single state instead of 
+        transitioning to other states. The relation is decribed by
+        `P(stay) = mP(leave)`.
+
+    Returns
+    -------
+    np.array
+        _description_
+    """
+    prob = 1/(nstate + m - 1)
+    P = np.ones((nstate, nstate))*prob
+    P += np.identity(nstate)*prob*4
+    # Pre-allocate the state array
+    comm = np.ones(p, dtype="int")
+    # Set the initial state
+    comm[0] = np.random.choice(nstate)
+    for i in range(1, p):
+        comm[i] = np.random.choice(nstate, p=P[comm[i-1]])
+    return comm
+
+
+def simulate_sbm(comm:np.array, rho:float, B:np.ndarray, n:int) -> np.ndarray:
+    """Simulate `n` SBM random graphs.
+
+    Parameters
+    ----------
+    comm : (p) np.array
+        1D community membership. Array of integers.
+    rho : float
+        Float between 0 and 1, sparsity parameter.
+    B : (s) np.ndarray
+        Community probability matrix. Dimension equal to the number of 
+        distinct memberships. Large diagonal and small off-diagonal.
+    n : int
+        Number of random graphs to generate.
+
+    Returns
+    -------
+    (n, p, p) np.ndarray
+        Generated adjacency matrices of `n` random graphs.
+    """
+    C = pd.get_dummies(comm).values.astype("int64")
+    P = rho*C@B@C.T
+    graphs = np.stack([np.random.binomial(1, P) for _ in range(n)])
+    # Only use the upper triangle and symmetrize graphs
+    graphs = np.triu(graphs) + np.triu(graphs).transpose((0, 2, 1))
+    return graphs
+
+
 def add_test(tests_dict:dict):
     """A double decorator to add tests.
 
@@ -298,3 +357,71 @@ class LoopTest:
         rej = stats.f.cdf(f_stat, len(wt_loop), len(wt_unloop)) <= type1
         
         return rej
+
+
+class TraceSample:
+    """Simulate chromatin traces by Gaussian process.
+
+    Parameters
+    ----------
+    N : int
+        The number of individual traces to sample.
+    R : int
+        The number of loci on each trace.
+    K : np.ndarray
+        The covariance matrix of shape (R, R).
+    tau : np.array
+        Array of length 3. Measurement error in each axis.
+    obs_p : float
+        The observed probability/detection efficiency.
+    shifts : (3, N) np.ndarray
+        Shifts of each trace.
+    random_state : int, optional
+        Random state for sample generation, by default None.
+    """
+    def __init__(
+            self,
+            N:int, 
+            R:int, 
+            K:np.ndarray,
+            tau:np.array,
+            obs_p:float, 
+            shifts:np.ndarray,
+            random_state:int=None
+    ):
+        self.N = N
+        self.R = R
+        self.K = K
+        self.tau_sq = np.square(tau)
+        self.obs_p = obs_p
+        self.shifts = shifts
+        self.rs = random_state
+        self.__rvs__()
+
+    @property
+    def samples(self):
+        return self._samples
+    
+    def __rvs__(self):
+        """Generate N random traces, each of length R.
+        """
+        sample_ls = []
+
+        for i, t in enumerate(self.tau_sq):
+            # measurement error + shift for each trace
+            Sigma = self.K + np.identity(self.R)*t
+            sample = stats.multivariate_normal.rvs(
+                cov=Sigma, size=self.N, random_state=self.rs
+            ) + self.shifts[i][:,None]
+
+            # missing at random with observed probability self.obs_p
+            mask_ber = stats.bernoulli.rvs(
+                self.obs_p, size=self.R*self.N, random_state=self.rs
+            )
+            mask_ber = mask_ber.reshape(sample.shape)
+            sample = np.where(mask_ber==1, sample, np.nan)
+
+            sample_ls.append(sample)
+
+        samples = np.stack(sample_ls)
+        self._samples = samples

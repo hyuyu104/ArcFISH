@@ -1,7 +1,7 @@
 LoopTest
 ========
 
-.. currentmodule:: snapfish2.analysis.simulations
+.. currentmodule:: snapfish2.analysis.simulate
 
 .. autoclass:: LoopTest
    :show-inheritance:

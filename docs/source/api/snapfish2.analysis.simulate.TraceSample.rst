@@ -1,7 +1,7 @@
 TraceSample
 ===========
 
-.. currentmodule:: snapfish2.utils.simulate
+.. currentmodule:: snapfish2.analysis.simulate
 
 .. autoclass:: TraceSample
    :show-inheritance:
