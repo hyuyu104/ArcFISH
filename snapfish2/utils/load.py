@@ -30,6 +30,7 @@ class MulFish:
 
     def read_data(self, path:str, **kwargs):
         self.info["columns"] = self.info["columns"].strip("()").split(",")
+        self.info["columns"] = [t.strip() for t in self.info["columns"]]
         data = pd.read_csv(
             path, 
             skiprows=len(self.info),

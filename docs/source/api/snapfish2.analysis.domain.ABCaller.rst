@@ -10,12 +10,12 @@ ABCaller
 
    .. autosummary::
 
-      ~ABCaller.AB_from_all_chr
-      ~ABCaller.call_AB_compartments
+      ~ABCaller.by_axes_pc
+      ~ABCaller.by_first_pc
       ~ABCaller.to_bedpe
 
    .. rubric:: Methods Documentation
 
-   .. automethod:: AB_from_all_chr
-   .. automethod:: call_AB_compartments
+   .. automethod:: by_axes_pc
+   .. automethod:: by_first_pc
    .. automethod:: to_bedpe

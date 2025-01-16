@@ -1,3 +1,4 @@
+import warnings
 import logging
 import numpy as np
 import pandas as pd
@@ -5,6 +6,7 @@ from scipy import stats
 from scipy.signal import find_peaks
 from scipy.ndimage import gaussian_filter
 from statsmodels.stats import multitest as multi
+from sklearn.cluster import KMeans
 
 from .loop import AxisWiseF, DiffLoop
 from ..utils.load import to_very_wide
@@ -305,10 +307,6 @@ class TADCaller:
         
 class ABCaller:
     """Call A/B compartments from multiplexed imaging data using PCA.
-    Code adopted from
-    Su, J.-H., Zheng, P., Kinrot, S. S., Bintu, B. & Zhuang, X. 
-    Genome-Scale Imaging of the 3D Organization and Transcriptional 
-    Activity of Chromatin. Cell 182, 1641-1659.e26 (2020).
     
     Parameters
     ----------
@@ -316,69 +314,130 @@ class ABCaller:
         Data in FOF-CT_core format with no repeating rows.
     min_comp_size : float
         Minimum compartment size in bp.
-    cutoff : float | None, optional
-        Distance below cutoff is treated as contact. If None, will 
-        use the 75% percentile of all distances as the cutoff, by 
-        default None.
-    sigma : float, optional
-        Gaussian kernel size, by default 1.
     """
     def __init__(
         self, 
         data:pd.DataFrame, 
-        min_comp_size:float, 
-        cutoff:float | None=None, 
-        sigma:float=1
+        min_cpmt_size:float
     ):
         self._data = data
-        self._min_comp_size = min_comp_size
-        self._cutoff = cutoff
-        self._sigma = sigma
+        self._min_cpmt_size = min_cpmt_size
         
-    def AB_from_all_chr(self) -> dict:
-        """Call A/B compartments.
+    def by_axes_pc(self) -> dict:
+        """Call A/B compartments by weighting the 2nd PC from different
+        axes.
 
         Returns
         -------
         dict
             A dictionary with key being the Chrom name and value being
-            an array of 0 and 1, same length as the number of loci.
+            an (2, p) array, with the first column being the 1D genomic
+            location, and the second column being integers of 0 and 1.
+        """
+        result = {}
+        for chr_id in pd.unique(self._data["Chrom"]):
+            chr_df = self._data[self._data["Chrom"]==chr_id]
+            result[chr_id] = self._single_chr_ab_by_axes_pc(
+                chr_df, min_cpmt_size=self._min_cpmt_size
+            )
+        return result
+
+    @staticmethod
+    def _single_chr_ab_by_axes_pc(
+        chr_df:pd.DataFrame, min_cpmt_size:float
+    ) -> np.ndarray:
+        """Perform PCA on each axis, weight axes, KMeans clustering, and
+        merge small compartments.
+        """
+        chr_df_pivoted, arr = to_very_wide(chr_df)
+        d1d = chr_df_pivoted.index.values
+        
+        if min_cpmt_size > np.ptp(d1d):
+            raise ValueError(
+                "Minimum compartment size larger than the imaging region."
+            )
+                
+        uidx = np.triu_indices(arr.shape[-1], 1)
+        abs_axes = np.abs(arr)
+        cutoffs = np.nanquantile(abs_axes[:,:,*uidx], .75, axis=[0,2])
+        frac_mat = np.stack([
+            np.sum(arr[:,i,:,:] < c, axis=0)
+            for i, c in enumerate(cutoffs)
+        ])/np.sum(~np.isnan(abs_axes), axis=0)
+        
+        if np.sum(np.isnan(frac_mat)) > 0:
+            raise ValueError("Pairwise difference matrix has holes.")    
+        v2s = np.linalg.eigh(frac_mat)[1][:,:,-2]
+        # Flip to align eigenvectors
+        for i, v in enumerate(v2s[1:]):
+            diff1 = np.sum(np.abs(np.sign(v2s[0]) - np.sign(v)))
+            diff2 = np.sum(np.abs(np.sign(v2s[0]) + np.sign(v)))
+            if diff1 > diff2:
+                v2s[i+1] = -v
+                
+        wts = AxisWiseF(chr_df).weights
+        wtarr = v2s*wts[:,None]
+        
+        cpmt_arr = KMeans(2, random_state=0).fit_predict(wtarr.T)
+        cpmt_arr = ABCaller._filter_small_cmpt(cpmt_arr, min_cpmt_size, d1d)
+        return np.stack([d1d, cpmt_arr])
+        
+    def by_first_pc(self, sigma:float=1) -> dict:
+        """Call A/B compartments by first PCA. Adopted from
+        Su, J.-H., Zheng, P., Kinrot, S. S., Bintu, B. & Zhuang, X. 
+        Genome-Scale Imaging of the 3D Organization and Transcriptional 
+        Activity of Chromatin. Cell 182, 1641-1659.e26 (2020).
+        
+        Parameters
+        ----------
+        sigma : float, optional
+            Gaussian kernel size, by default 1.
+
+        Returns
+        -------
+        dict
+            A dictionary with key being the Chrom name and value being
+            an (2, p) array, with the first column being the 1D genomic
+            location, and the second column being integers of 0 and 1.
         """
         result = {}
         for chr_id in pd.unique(self._data["Chrom"]):
             chr_df = self._data[self._data["Chrom"]==chr_id]
             chr_df_pivoted, arr = to_very_wide(chr_df)
             d1d = chr_df_pivoted.index.values
+            if self._min_cpmt_size > np.ptp(d1d):
+                raise ValueError(
+                    "Minimum compartment size larger than the imaging region."
+                )
             
-            if self._cutoff is None:
-                dist_mats = np.sqrt(np.sum(np.square(arr), axis=1))
-                triu_val = dist_mats[:,*np.triu_indices(len(d1d), 1)]
-                cutoff = np.quantile(triu_val[~np.isnan(triu_val)], .75)
-                logging.info(f"{chr_id} cutoff set to {cutoff}")
-            else:
-                cutoff = self._cutoff
+            dist_mats = np.sqrt(np.sum(np.square(arr), axis=1))
+            triu_val = dist_mats[:,*np.triu_indices(len(d1d), 1)]
+            cutoff = np.quantile(triu_val[~np.isnan(triu_val)], .75)
+            logging.info(f"{chr_id} cutoff set to {cutoff}")
             
-            ab_arr = self.call_AB_compartments(
+            cpmt_arr = self._single_chr_ab_by_first_pc(
                 arr=arr, 
                 d1d=d1d, 
-                min_comp_size=self._min_comp_size,
                 cutoff=cutoff,
-                sigma=self._sigma
+                sigma=sigma
             )
-            result[chr_id] = np.stack([d1d, ab_arr])
+            cpmt_arr = self._filter_small_cmpt(
+                cpmt_arr=cpmt_arr,
+                min_cpmt_size=self._min_cpmt_size,
+                d1d=d1d
+            )
+            result[chr_id] = np.stack([d1d, cpmt_arr])
             
         return result
             
     @staticmethod
-    def call_AB_compartments(
+    def _single_chr_ab_by_first_pc(
         arr:np.ndarray,
         d1d:np.ndarray,
-        min_comp_size:float,
         cutoff:float,
         sigma:float=1
     ) -> np.ndarray:
-        """Call A/B compartments of a single chromosome. 
-
+        """Call A/B compartments from a single chromosome.
 
         Parameters
         ----------
@@ -406,11 +465,6 @@ class ABCaller:
             If the minimum compartment size is larger than the imaging
             region.
         """
-        if min_comp_size > np.ptp(d1d):
-            raise ValueError(
-                "Minimum compartment size is larger than the imaging region."
-            )
-        
         # (n, p, p) pairwise distance matrices for each trace
         dist_mats = np.sqrt(np.sum(np.square(arr), axis=1))
         # (p, p) pseudo contact map
@@ -450,23 +504,31 @@ class ABCaller:
         
         X = contact_corr - np.nanmean(contact_corr, axis=0)
         U, S, Vh = np.linalg.svd(X)
-        comp_arr = ((np.sign(U[1]*S[1])+1)/2).astype("int")
+        cpmt_arr = ((np.sign(U[1]*S[1])+1)/2).astype("int")
         
-        # Flip the sign if the compartment is too small
+        return cpmt_arr
+    
+    @staticmethod
+    def _filter_small_cmpt(
+        cpmt_arr:np.ndarray, 
+        min_cpmt_size:float, 
+        d1d:np.ndarray
+    ) -> np.ndarray:
+        """Merge small compartments by flipping their signs."""
+        # Flip the sign if the cpmtartment is too small
         while True:
             pos_ls = []
-            for i, r in enumerate(comp_arr):
-                if i == 0 or r != comp_arr[i-1]:
+            for i, r in enumerate(cpmt_arr):
+                if i == 0 or r != cpmt_arr[i-1]:
                     pos_ls.append([i, i])
                 else:
                     pos_ls[-1][1] = i
-            comp_lens = np.array([d1d[t[1]]-d1d[t[0]] for t in pos_ls])
-            if np.sum(comp_lens < min_comp_size) == 0:
+            cpmt_lens = np.array([d1d[t[1]]-d1d[t[0]] for t in pos_ls])
+            if np.sum(cpmt_lens < min_cpmt_size) == 0:
                 break
-            min_s, min_e = pos_ls[np.argmin(comp_lens)]
-            comp_arr[min_s:min_e+1] = 1 - comp_arr[min_s:min_e+1]
-        
-        return comp_arr
+            min_s, min_e = pos_ls[np.argmin(cpmt_lens)]
+            cpmt_arr[min_s:min_e+1] = 1 - cpmt_arr[min_s:min_e+1]
+        return cpmt_arr
     
     def to_bedpe(
         self, 
@@ -502,31 +564,10 @@ class ABCaller:
                 .set_index("Chrom_Start")
             )["Chrom_End"][val[0]]
 
-            pos_dict = {t:[] for t in pd.unique(val[1])}
-            for i, r in enumerate(val[1]):
-                if i == 0 or r != val[1][i-1]:
-                    pos_dict[r].append([i, i])
-                else:
-                    pos_dict[r][-1][1] = i
-                    
-            result = []
-            for c, comp in enumerate(["B", "A"]):
-                # No A or B compartment
-                if c not in pos_dict:
-                    continue
-                for pair in pos_dict[c]:
-                    result.append([
-                        chr_id, 
-                        val[0][pair[0]], end_map[val[0][pair[0]]],
-                        chr_id,
-                        val[0][pair[1]], end_map[val[0][pair[1]]],
-                        comp
-                    ])
-            cols = ["c1", "s1", "e1", "c2", "s2", "e2", "cmp"]
-            dfs.append(
-                pd.DataFrame(result, columns=cols)
-                .sort_values("s1", ignore_index=True)
-            )
+            df = pd.DataFrame(val.T, columns=["s1", "cmpt"])
+            df["e1"] = df["s1"].map(end_map)
+            df["c1"] = chr_id
+            dfs.append(df[["c1", "s1", "e1", "cmpt"]])
         
         out_df = pd.concat(dfs, ignore_index=True)
         if out is None:
