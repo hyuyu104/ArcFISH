@@ -46,6 +46,9 @@ to-server:
 	hongyuyu@longleaf.unc.edu:\
 	/proj/yunligrp/users/hongyuyu/AxisWiseTest/data/
 
+	scp data/data.json hongyuyu@longleaf.unc.edu:\
+	/proj/yunligrp/users/hongyuyu/AxisWiseTest/data/
+
 # Will not overwrite existing files
 from-server:
 	rsync -a --ignore-existing hongyuyu@longleaf.unc.edu:\
