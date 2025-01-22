@@ -1,4 +1,5 @@
-# SnapFISH2: integrative analysis tool for multiplexed FISH
+```{include} ../../README.md
+```
 
 ```{toctree}
 :caption: Reproducing Figures

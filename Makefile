@@ -46,7 +46,7 @@ to-server:
 	hongyuyu@longleaf.unc.edu:\
 	/proj/yunligrp/users/hongyuyu/AxisWiseTest/data/
 
-	scp data/data.json hongyuyu@longleaf.unc.edu:\
+	scp data/data.json data/zenodo.json hongyuyu@longleaf.unc.edu:\
 	/proj/yunligrp/users/hongyuyu/AxisWiseTest/data/
 
 # Will not overwrite existing files
