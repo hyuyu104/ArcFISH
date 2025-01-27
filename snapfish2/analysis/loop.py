@@ -1,3 +1,4 @@
+import os
 from abc import ABC, abstractmethod
 import logging
 import warnings
@@ -5,11 +6,12 @@ from typing import Tuple
 from itertools import combinations
 import numpy as np
 import pandas as pd
+import dask.array as da
 from scipy import stats
 from statsmodels.stats import multitest as multi
 
-from ..utils import to_very_wide
-from ..utils import sample_covar_ma
+from ..utils.load import ChromArray, to_very_wide
+from ..utils.func import sample_covar_ma
 
 
 # Define the display order
@@ -17,8 +19,6 @@ __all__ = [
     "LoopTestAbstract",
     "TwoSampleT",
     "AxisWiseF",
-    "AxisWiseT",
-    "AxisWiseChi2",
     "LoopCaller",
     "DiffLoop"
 ]
@@ -31,35 +31,27 @@ class LoopTestAbstract(ABC):
     
     Parameters
     ----------
-    chr_df : pd.DataFrame
-        Data of a single chromosome in FOF-CT_core format.
+    carr : ChromArray
+        Data of a single chromosome, loaded already.
     """
     @abstractmethod
-    def __init__(self, chr_df:pd.DataFrame):
+    def __init__(self, carr:ChromArray):
         pass
     
-    @staticmethod
     @abstractmethod
-    def preprocess(d1d:np.ndarray, arr:np.ndarray) -> np.ndarray:
+    def preprocess(self):
         """Preprocess the pairwise differences in each axis.
-
-        Parameters
-        ----------
-        d1d : (p,) np.ndarray
-            Array of 1D genomic locations of imaging loci.
-        arr : (n, d, p, p) np.ndarray
-            Pairwise difference matrices of all chromatin traces.
-
-        Returns
-        -------
-        (n, d, p, p) np.ndarray
-            Processed pairwise difference matrices.
         """
         pass
     
     @staticmethod
     @abstractmethod
-    def ij_background(i:int, j:int, d1d:np.ndarray) -> np.ndarray:
+    def ij_background(
+        i:int, 
+        j:int, 
+        d1d:np.ndarray,
+        outer_cut:int
+    ) -> np.ndarray:
         """Define the local background for the (i,j) entry.
 
         Parameters
@@ -70,6 +62,9 @@ class LoopTestAbstract(ABC):
             Index of the second locus.
         d1d : (p,) np.ndarray
             Array of 1D genomic locations of imaging loci.
+        outer_cut : int
+            Loci with 1D genomic distance within `outer_cut` from the
+            target locus is included in the local background.
 
         Returns
         -------
@@ -79,97 +74,79 @@ class LoopTestAbstract(ABC):
         pass
     
     @abstractmethod
-    def test_func(
+    def append_pval(
         self, 
-        loop_arr:np.ndarray, 
-        bkgd_arr:np.ndarray
-    ) -> Tuple[float, float]:
-        """Test whether the `loop_arr` (loop entry) has smaller average 
-        distance compared to `bkgd_arr` (local background).
-
-        Parameters
-        ----------
-        loop_arr : (n, d) np.ndarray
-            Pairwise differences of all chromatin traces and all axes at
-            the loop entry.
-        bkgd_arr : (n, d, r) np.ndarray
-            Pairwise differences of all chromatin traces and all axes at
-            the local background entries, where `r` is the number of 
-            entries in the local background model.
-
-        Returns
-        -------
-        Tuple[float, float]
-            Test statistic and p-value.
-        """
-        pass
-    
-    @staticmethod
-    @abstractmethod
-    def filter_summits(
-        summits:np.ndarray, 
-        freq_mat:np.ndarray, 
-        idx:np.ndarray, 
-        max_i:int
+        result:dict, 
+        cut_lo:int, 
+        cut_up:int,
+        outer_cut:int,
     ):
-        """Filter summits identified by contact frequency.
+        """Performing tests and append the test results to the 
+        dictionary passed in. Must add `stat` and `pval` as keys to 
+        `result`, with the values being (p,p) matrix. Can also add other
+        key-value pairs.
 
         Parameters
         ----------
-        summits : (p, p) np.ndarray
-            Boolean matrix with entries identified as summits equal to
-            `True`, will be modified inplace.
-        freq_mat : (p, p) np.ndarray
-            Contact frequency matrix, where the (i,j) entry is defined 
-            as the number of traces with the (i,j) distances below a
-            threshold.
-        idx : (k, k) np.ndarray
-            The indices of the loop candidates associated with the 
-            summit considered, returned by `np.where(candidate_mat)`.
-        max_i : int
-            The index of the summit within the candidates, so `max_i` is
-            between 1 and k-1.
+        result : dict
+            The result dictionary to add testing results.
+        cut_lo : float
+            Minimum loop size.
+        cut_up : float
+            Maximum loop size.
+        outer_cut : int
+            Loci with 1D genomic distance within `outer_cut` from the
+            target locus is included in the local background.
         """
         pass
     
+    @abstractmethod
+    def append_summit(self, result:dict):
+        """Treat the entry with the smallest p-value in each cluster as
+        the summit. No additional filtering.
 
+        Parameters
+        ----------
+        result : dict
+            The result dictionary to add summit.
+        """
+        pass
+    
+    
 class TwoSampleT(LoopTestAbstract):
     """Test 3D distance by two sample T-test. This the same test as
     implemented in the original SnapFISH paper:
     Lee, L. et al. SnapFISH: a computational pipeline to identify 
     chromatin loops from multiplexed DNA FISH data. Nat. Commun. 14, 
     4873 (2023).
-    
+
     Parameters
     ----------
-    chr_df : pd.DataFrame
-        Data of a single chromosome in FOF-CT_core format.
+    carr : ChromArray
+        Data of a single chromosome, loaded already.
     """
-    def __init__(self, chr_df:pd.DataFrame):
+    def __init__(self, carr:ChromArray):
+        if carr.normalized:
+            raise ValueError(
+                "Input pairwise difference array must be unnormalized."
+            )
+        self._d1d = carr.d1d
+        self._arr = carr.arr.compute()
+        
+    def preprocess(self):
+        """No additional preprocessing.
+        """
         pass
     
     @staticmethod
-    def preprocess(d1d:np.ndarray, arr:np.ndarray) -> np.ndarray:
-        """Return the same array.
-        
-        Parameters
-        ----------
-        d1d : (p,) np.ndarray
-            Array of 1D genomic locations of imaging loci.
-        arr : (n, d, p, p) np.ndarray
-            Pairwise difference matrices of all chromatin traces.
-
-        Returns
-        -------
-        (n, d, p, p) np.ndarray
-            Processed pairwise difference matrices.
-        """
-        return arr
-    
-    @staticmethod
-    def ij_background(i:int, j:int, d1d:np.ndarray) -> np.ndarray:
-        """The entries that are between 25kb and 50kb away from the 
-        (i,j) entry are treated as the background.
+    def ij_background(
+        i:int,
+        j:int,
+        d1d:np.ndarray,
+        outer_cut:int
+    ) -> np.ndarray:
+        """The entries that are between 25kb and `outer_cut` away from 
+        the (i,j) entry are treated as the background.
         
         Parameters
         ----------
@@ -179,6 +156,9 @@ class TwoSampleT(LoopTestAbstract):
             Index of the second locus.
         d1d : (p,) np.ndarray
             Array of 1D genomic locations of imaging loci.
+        outer_cut : int
+            Loci with 1D genomic distance within `outer_cut` from the
+            target locus is included in the local background.
 
         Returns
         -------
@@ -187,12 +167,12 @@ class TwoSampleT(LoopTestAbstract):
         """
         kept = np.zeros((len(d1d), len(d1d)), dtype="bool")
         
-        # select the outer square
-        a = (np.abs(d1d-d1d[i])<=50e3).astype("int")
-        b = (np.abs(d1d-d1d[j])<=50e3).astype("int")
+        # Select the outer square
+        a = (np.abs(d1d-d1d[i])<=outer_cut).astype("int")
+        b = (np.abs(d1d-d1d[j])<=outer_cut).astype("int")
         kept[(a[:,None]+b[None,:])==2] = True
         
-        # exclude the inner square
+        # Exclude the inner square
         a = (np.abs(d1d-d1d[i])<=25e3).astype("int")
         b = (np.abs(d1d-d1d[j])<=25e3).astype("int")
         kept[(a[:,None]+b[None,:])==2] = False
@@ -200,79 +180,91 @@ class TwoSampleT(LoopTestAbstract):
         kept[np.tril_indices_from(kept)] = False
         return kept
     
-    def test_func(
+    def append_pval(
         self, 
-        loop_arr:np.ndarray, 
-        bkgd_arr:np.ndarray
-    ) -> Tuple[float, float]:
-        """Convert the axis differences to Euclidean distances. Average
-        the `r` local background distances within each trace. The final 
-        testing values are a size (n,) array for loop and a size (n,)
-        array for background. This is tested by a one-sided T-test with 
-        unequal variance.
-
-        Parameters
-        ----------
-        loop_arr : (n, d) np.ndarray
-            Pairwise differences of all chromatin traces and all axes at
-            the loop entry.
-        bkgd_arr : (n, d, r) np.ndarray
-            Pairwise differences of all chromatin traces and all axes at
-            the local background entries, where `r` is the number of 
-            entries in the local background model.
-
-        Returns
-        -------
-        Tuple[float, float]
-            T-test statistic and p-value.
-        """
-        loop_dist = np.sqrt(np.sum(np.square(loop_arr), axis=1))
-        loop_dist = loop_dist[~np.isnan(loop_dist)]
-        
-        bkgd_dist = np.sqrt(np.sum(np.square(bkgd_arr), axis=1))
-        bkgd_mean = np.nanmean(bkgd_dist, axis=1)
-        bkgd_mean = bkgd_mean[~np.isnan(bkgd_mean)]
-        t_stat, p_val_t = stats.ttest_ind(
-            loop_dist, bkgd_mean, equal_var=False, alternative="less"
-        )
-        return t_stat, p_val_t
-    
-    @staticmethod
-    def filter_summits(
-        summits:np.ndarray, 
-        freq_mat:np.ndarray, 
-        idx:np.ndarray, 
-        max_i:int
+        result:dict, 
+        cut_lo:int, 
+        cut_up:int,
+        outer_cut:int,
     ):
-        """Filter summits identified by contact frequency. If the summit
-        is a singleton (i.e. from only one candidate), then it is marked
-        as summit if contact frequency is larger than 1/2. If the summit
-        is not a singleton (i.e. from multiple candidates), then it is 
-        marked as summit if contact frequency is larger than 1/3.
+        """Perform two-sample t-tests.
 
         Parameters
         ----------
-        summits : (p, p) np.ndarray
-            Boolean matrix with entries identified as summits equal to
-            `True`, will be modified inplace.
-        freq_mat : (p, p) np.ndarray
-            Contact frequency matrix, where the (i,j) entry is defined 
-            as the number of traces with the (i,j) distances below a
-            threshold.
-        idx : (k, k) np.ndarray
-            The indices of the loop candidates associated with the 
-            summit considered, returned by `np.where(candidate_mat)`.
-        max_i : int
-            The index of the summit within the candidates, so `max_i` is
-            between 1 and k-1.
+        result : dict
+            The result dictionary to add testing results.
+        cut_lo : float
+            Minimum loop size.
+        cut_up : float
+            Maximum loop size.
+        outer_cut : int
+            Loci with 1D genomic distance within `outer_cut` from the
+            target locus is included in the local background.
         """
-        i1, i2 = idx[0][max_i], idx[1][max_i]
-        if len(idx[0]) == 2:  # singleton (symmetric)
-            if freq_mat[i1,i2] > 1/2:
-                summits[i1,i2] = summits[i2,i1] = True
-        elif freq_mat[i1,i2] > 1/3:
-            summits[i1,i2] = summits[i2,i1] = True
+        p = len(self._d1d)
+        d1map = self._d1d[None,:] - self._d1d[:,None]
+        
+        result["stat"] = np.zeros((p,p), dtype="float64")*np.nan
+        result["pval"] = np.zeros((p,p), dtype="float64")*np.nan
+        
+        warnings.filterwarnings("ignore", ".*Mean of empty slice")
+        for i, j in zip(*np.where((d1map>=cut_lo)&(d1map<=cut_up))):
+            kept = self.ij_background(i, j, self._d1d, outer_cut)
+            if np.sum(kept) == 0:
+                continue
             
+            loop_dist = np.sqrt(np.sum(np.square(self._arr[:,:,i,j]), axis=1))
+            loop_dist = loop_dist[~np.isnan(loop_dist)]
+            
+            bkgd_dist = np.sqrt(np.sum(np.square(self._arr[:,:,kept]), axis=1))
+            bkgd_mean = np.nanmean(bkgd_dist, axis=1)
+            bkgd_mean = bkgd_mean[~np.isnan(bkgd_mean)]
+            stat, pval = stats.ttest_ind(
+                loop_dist, 
+                bkgd_mean, 
+                equal_var=False, 
+                alternative="less"
+            )
+            result["stat"][i,j] = result["stat"][j,i] = stat
+            result["pval"][i,j] = result["pval"][j,i] = pval
+            
+    def append_summit(self, result:dict):
+        """Treat the entry with the smallest p-value in each cluster as
+        a potential summit. Filter summits by contact frequency. If the 
+        summit is a singleton (i.e. from only one candidate), then it is
+        marked as summit if contact frequency is larger than 1/2. If the
+        summit is not a singleton (i.e. from multiple candidates), then 
+        it is marked as summit if contact frequency is larger than 1/3.
+
+        Parameters
+        ----------
+        result : dict
+            The result dictionary to add summit.
+        """
+        arr, d1d = self._arr, self._d1d
+        dmaps = np.sqrt(np.sum(np.square(arr), axis=1))
+        freq_dists = dmaps[:,np.abs(d1d[:,None] - d1d[None,:])==25e3]
+        warnings.filterwarnings("ignore", r".*invalid value")
+        freq_mat = np.sum(dmaps<np.nanmean(freq_dists), axis=0)/\
+            np.sum(~np.isnan(dmaps), axis=0)
+            
+        labeled = result["label"]
+        summit = np.zeros_like(labeled, dtype="bool")
+        
+        for lab in np.unique(labeled[~np.isnan(labeled)]):
+            # Keep only the triu part to compare p values
+            idx = np.where(np.triu(labeled)==lab)
+            max_i = np.argmin(result["pval"][idx])
+            
+            i1, i2 = idx[0][max_i], idx[1][max_i]
+            if len(idx[0]) == 2:  # singleton (symmetric)
+                if freq_mat[i1,i2] > 1/2:
+                    summit[i1,i2] = summit[i2,i1] = True
+            elif freq_mat[i1,i2] > 1/3:
+                summit[i1,i2] = summit[i2,i1] = True
+        
+        result["summit"] = summit
+
             
 class AxisWiseF(LoopTestAbstract):
     """Perform axis-wise F-test and combine p-values by Cauchy 
@@ -280,97 +272,27 @@ class AxisWiseF(LoopTestAbstract):
 
     Parameters
     ----------
-    chr_df : pd.DataFrame
-        Data of a single chromosome in FOF-CT_core format.
+    carr : ChromArray
+        Data of a single chromosome, loaded already.
     """
-    def __init__(self, chr_df:pd.DataFrame):
-        covs = self.compute_cov(chr_df)
-        weights = []
-        for cov in covs:
-            # lambdas = np.linalg.eigvals(cov)
-            # var = bema_var_hat(lambdas, X.shape[1], X.shape[0], 0.2)
-            var = np.median(np.diag(cov))
-            weights.append(1/var)
-        self.weights = weights/np.sum(weights)
-        # wstr = [f"{c}({w})" for c, w in zip(coor_cols, self.weights.round(3))]
-        # print("Weights:", *wstr)
+    def __init__(self, carr:ChromArray):
+        self._carr = carr
         
-    @staticmethod
-    def compute_cov(chr_df:pd.DataFrame) -> np.ndarray:
-        """Compute the sample covariance matrices for each axis. Handle
-        missing values and thus the sample covariance matrix might not
-        be PSD.
-
-        Parameters
-        ----------
-        chr_df : pd.DataFrame
-            Data of a single chromosome in FOF-CT_core format.
-
-        Returns
-        -------
-        (d, p, p) np.ndarray
-            Sample covariance matrices for each axis.
+    def preprocess(self):
+        """Remove outliers and normalize by 1D genomic distance by 
+        :func:`snapfish2.utils.load.ChromArray.normalize_inplace`.
         """
-        coor_cols = ["X", "Y", "Z"]
-        pivoted = chr_df.pivot_table(
-            index="Chrom_Start", 
-            columns="Trace_ID", 
-            values=coor_cols,
-            sort=False
-        )
-        covs = []
-        for c in coor_cols:
-            X = pivoted[c].values.T
-            X = X - np.nanmean(X, axis=1)[:,None]
-            covs.append(sample_covar_ma(X))
-        return np.stack(covs)
+        self._carr.normalize_inplace()
         
     @staticmethod
-    def preprocess(
-        d1d:np.ndarray, 
-        arr:np.ndarray, 
-        nstds:float=4
+    def ij_background(
+        i:int, 
+        j:int, 
+        d1d:np.ndarray,
+        outer_cut:int
     ) -> np.ndarray:
-        """Stratify by 1D genomic distance and remove entries that are
-        `nstds` standard deviations away from the mean. Also remove 1D
-        genomic distance bias by dividing each stratum by its std.
-
-        Parameters
-        ----------
-        d1d : (p,) np.ndarray
-            Array of 1D genomic locations of imaging loci.
-        arr : (n, d, p, p) np.ndarray
-            Pairwise difference matrices of all chromatin traces.
-        nstds : float, optional
-            Number of standard deviations to use as the cutoff. Remove 
-            values more than `nstds` standard deviations away from the
-            mean, by default 4.
-
-        Returns
-        -------
-        np.ndarray
-            Processed pairwise difference matrices.
-        """
-        d1map = d1d[None,:] - d1d[:,None]
-        narr = arr.copy()
-        for i in range(arr.shape[1]):
-            for d in np.unique(d1map[d1map>0]):
-                idx = np.where(d1map==d)
-                med_std = np.nanmedian(np.square(arr[:,i,*idx]))**.5
-                
-                sidx = np.where(np.abs(d1map)==d)
-                sub_arr = np.where(
-                    np.abs(arr[:,i,*sidx]) > med_std*nstds, 
-                    np.nan, arr[:,i,*sidx]
-                )
-                narr[:,i,*sidx] = sub_arr/np.nanstd(sub_arr)
-                
-        return narr
-        
-    @staticmethod
-    def ij_background(i:int, j:int, d1d:np.ndarray) -> np.ndarray:
-        """The entries that are between 25kb and 50kb away from the 
-        (i,j) entry are treated as the background.
+        """The entries that are between 25kb and `outer_cut` away from 
+        the (i,j) entry are treated as the background.
         
         Parameters
         ----------
@@ -380,6 +302,9 @@ class AxisWiseF(LoopTestAbstract):
             Index of the second locus.
         d1d : (p,) np.ndarray
             Array of 1D genomic locations of imaging loci.
+        outer_cut : int
+            Loci with 1D genomic distance within `outer_cut` from the
+            target locus is included in the local background.
 
         Returns
         -------
@@ -388,12 +313,12 @@ class AxisWiseF(LoopTestAbstract):
         """
         kept = np.zeros((len(d1d), len(d1d)), dtype="bool")
         
-        # select the outer square
-        a = (np.abs(d1d-d1d[i])<=50e3).astype("int")
-        b = (np.abs(d1d-d1d[j])<=50e3).astype("int")
+        # Select the outer square
+        a = (np.abs(d1d-d1d[i])<=outer_cut).astype("int")
+        b = (np.abs(d1d-d1d[j])<=outer_cut).astype("int")
         kept[(a[:,None]+b[None,:])==2] = True
         
-        # exclude the inner square
+        # Exclude the inner square
         a = (np.abs(d1d-d1d[i])<=25e3).astype("int")
         b = (np.abs(d1d-d1d[j])<=25e3).astype("int")
         kept[(a[:,None]+b[None,:])==2] = False
@@ -401,138 +326,77 @@ class AxisWiseF(LoopTestAbstract):
         kept[np.tril_indices_from(kept)] = False
         return kept
         
-    def test_func_axis(
+    def append_pval(
         self, 
-        loop_arr:np.ndarray, 
-        bkgd_arr:np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
-        """Perform F-test in each axis.
-
-        Parameters
-        ----------
-        loop_arr : (n, d) np.ndarray
-            Pairwise differences of all chromatin traces and all axes at
-            the loop entry.
-        bkgd_arr : (n, d, r) np.ndarray
-            Pairwise differences of all chromatin traces and all axes at
-            the local background entries, where `r` is the number of 
-            entries in the local background model.
-
-        Returns
-        -------
-        Tuple[np.ndarray, np.ndarray]
-            Size (d,) test statistics and p-values.
-        """
-        loop_arr = loop_arr[np.all(~np.isnan(loop_arr), axis=1)]
-        bkgd_arr = np.vstack(bkgd_arr.transpose(0, 2, 1))
-        bkgd_arr = bkgd_arr[np.all(~np.isnan(bkgd_arr), axis=1)]
-        
-        var_loop_est = np.mean(np.square(loop_arr), axis=0)
-        var_unloop_est = np.mean(np.square(bkgd_arr), axis=0)
-        
-        f_stats = var_loop_est/var_unloop_est
-        nalleles_loop = loop_arr.shape[0]
-        nalleles_unloop = bkgd_arr.shape[0]
-        f_pvals = stats.f.cdf(f_stats, nalleles_loop, nalleles_unloop)
-        return f_stats, f_pvals
-        
-    def test_func(
-        self, 
-        loop_arr:np.ndarray, 
-        bkgd_arr:np.ndarray
-    ) -> Tuple[float, float]:
-        """Call :func:`AxisWiseF.test_func_axis` and combine p-values
-        by Cauchy aggregation test.
-
-        Parameters
-        ----------
-        loop_arr : (n, d) np.ndarray
-            Pairwise differences of all chromatin traces and all axes at
-            the loop entry.
-        bkgd_arr : (n, d, r) np.ndarray
-            Pairwise differences of all chromatin traces and all axes at
-            the local background entries, where `r` is the number of 
-            entries in the local background model.
-
-        Returns
-        -------
-        Tuple[float, float]
-            ACT statistic and p-value.
-        """
-        f_pvals = self.test_func_axis(loop_arr, bkgd_arr)[1]
-        
-        act_stat = np.sum(self.weights*np.tan((0.5 - f_pvals)*np.pi))
-        p_val_act = 1 - stats.cauchy.cdf(act_stat)
-        return act_stat, p_val_act
-    
-    @staticmethod
-    def filter_summits(
-        summits:np.ndarray, 
-        freq_mat:np.ndarray, 
-        idx:np.ndarray, 
-        max_i:int
+        result:dict, 
+        cut_lo:int, 
+        cut_up:int,
+        outer_cut:int,
     ):
-        """Keep all summits, no filtering.
+        """Perform tests in each axis. In addition to `stat` and `pval`,
+        also append `axis_stat` and `axis_pval`, which are both (d,p,p)
+        matrices.
 
         Parameters
         ----------
-        summits : (p, p) np.ndarray
-            Boolean matrix with entries identified as summits equal to
-            `True`, will be modified inplace.
-        freq_mat : (p, p) np.ndarray
-            Contact frequency matrix, where the (i,j) entry is defined 
-            as the number of traces with the (i,j) distances below a
-            threshold.
-        idx : (k, k) np.ndarray
-            The indices of the loop candidates associated with the 
-            summit considered, returned by `np.where(candidate_mat)`.
-        max_i : int
-            The index of the summit within the candidates, so `max_i` is
-            between 1 and k-1.
+        result : dict
+            The result dictionary to add testing results.
+        cut_lo : float
+            Minimum loop size.
+        cut_up : float
+            Maximum loop size.
+        outer_cut : int
+            Loci with 1D genomic distance within `outer_cut` from the
+            target locus is included in the local background.
         """
-        i1, i2 = idx[0][max_i], idx[1][max_i]
-        summits[i1,i2] = summits[i2,i1] = True
-        
-        
-class AxisWiseChi2(AxisWiseF):
-    
-    @staticmethod
-    def ij_background(i, j, d1d):
-        pass
-    
-    def test_func(self, loop_arr, _):
-        loop_arr = loop_arr[np.all(~np.isnan(loop_arr), axis=1)]
-        var_loop_est = np.var(loop_arr, ddof=0, axis=0)
-        
-        chi2_stats = var_loop_est * loop_arr.shape[0]
-        chi2_pvals = stats.chi2.cdf(chi2_stats, df=loop_arr.shape[0]-1)
-        
-        act_stat = np.sum(self.weights*np.tan((0.5 - chi2_pvals)*np.pi))
-        p_val_act = 1 - stats.cauchy.cdf(act_stat)
-        return act_stat, p_val_act
-    
-    
-class AxisWiseT(AxisWiseF):
-    
-    def test_func(self, loop_arr, bkgd_arr):
-        loop_arr = loop_arr[np.all(~np.isnan(loop_arr), axis=1)]
-        bkgd_arr = np.vstack(bkgd_arr.transpose(0, 2, 1))
-        bkgd_arr = bkgd_arr[np.all(~np.isnan(bkgd_arr), axis=1)]
-        
-        loop_dist = np.abs(loop_arr).T
-        unloop_dist = np.abs(bkgd_arr).T
-        
-        t_pvals = []
-        for l, u in zip(loop_dist, unloop_dist):
-            t_pvals.append(stats.ttest_ind(
-                l, u, equal_var=False, alternative="less"
-            )[1])
-        t_pvals = np.array(t_pvals)
-        
-        act_stat = np.sum(self.weights*np.tan((0.5 - t_pvals)*np.pi))
-        p_val_act = 1 - stats.cauchy.cdf(act_stat)
-        return act_stat, p_val_act
+        n, p, d = self._carr.X.shape
+        d1map = self._carr.d1d[None,:] - self._carr.d1d[:,None]
 
+        entry_var = da.nanmean(da.square(self._carr.arr), axis=0).compute()
+        count = da.sum(~da.isnan(self._carr.arr), axis=0).compute()
+
+        result["axis_stat"] = np.zeros((d,p,p), dtype="float64")*np.nan
+        result["axis_pval"] = np.zeros((d,p,p), dtype="float64")*np.nan
+
+        for i, j in zip(*np.where((d1map>=cut_lo)&(d1map<=cut_up))):
+            bkgd_map = self.ij_background(i, j, self._carr.d1d, outer_cut)
+            if np.sum(bkgd_map) == 0:
+                continue
+            
+            num_unloop = np.sum(count[:,bkgd_map], axis=1)
+            wts = count[:,bkgd_map]/num_unloop[:,None]
+            denom = np.sum(wts*entry_var[:,bkgd_map], axis=1)
+            
+            f_stats = entry_var[:,i,j]/denom
+            result["axis_stat"][:,i,j] = result["axis_stat"][:,j,i] = f_stats
+            f_pvals = stats.f.cdf(f_stats, count[:,i,j], num_unloop)
+            result["axis_pval"][:,i,j] = result["axis_pval"][:,j,i] = f_pvals
+            
+        weights = self._carr.axis_weights()[:,None,None]
+        result["stat"] = np.sum(weights*np.tan(
+            (0.5 - result["axis_pval"])*np.pi
+        ), axis=0)
+        result["pval"] = 1 - stats.cauchy.cdf(result["stat"])
+    
+    def append_summit(self, result:dict):
+        """Treat the entry with the smallest p-value in each cluster as
+        the summit. No additional filtering.
+
+        Parameters
+        ----------
+        result : dict
+            The result dictionary to add summit.
+        """
+        labeled = result["label"]
+        summit = np.zeros_like(labeled, dtype="bool")
+        for lab in np.unique(labeled[~np.isnan(labeled)]):
+            # Keep only the triu part to compare p values
+            idx = np.where(np.triu(labeled)==lab)
+            max_i = np.argmin(result["pval"][idx])
+            i1, i2 = idx[0][max_i], idx[1][max_i]
+            summit[i1,i2] = summit[i2,i1] = True
+        result["summit"] = summit
+        
 
 class LoopCaller:
     """Call chromatin loops from multiplexed imaging data.
@@ -541,8 +405,10 @@ class LoopCaller:
     ----------
     data : pd.DataFrame
         Data in FOF-CT_core format with no repeating rows.
+    zarr_dire : str
+        Directory to store zarr file generated during calculation.
     fdr_cutoff: float
-        FDR cut-off for chromatin loops, by default .1.
+        FDR cut-off for chromatin loops, by default 0.1.
     cut_lo : float, optional
         Minimum loop size (1D genomic distance between the first locus
         and the second locus), by default 1e5.
@@ -551,31 +417,60 @@ class LoopCaller:
     gap : float, optional
         Loop candidates `gap` away from each other are considered 
         candidates for the same summit, by default 50e3.
-    freq : float, optional
-        Use the median of all pairwise distances with 1D genomic 
-        distance equal to `freq` as the cutoff to define the frequency
-        map, by default 25e3.
+    outer_cut : float, optional
+        Loci with 1D genomic distance within `outer_cut` from the target 
+        locus is included in the local background, by default 50e3.
     """
     def __init__(
         self,
         data:pd.DataFrame,
-        fdr_cutoff:float=.1,
+        zarr_dire:str,
+        fdr_cutoff:float=0.1,
         cut_lo:float=1e5,
         cut_up:float=1e6,
         gap:float=50e3,
-        freq:float=25e3
+        outer_cut:float=50e3
     ):
         self._data = data
+        if not os.path.exists(zarr_dire):
+            os.mkdir(zarr_dire)
+        self._zarr_dire = zarr_dire
+        
         self._fdr_cutoff = fdr_cutoff
-        self.cut_lo = int(cut_lo)
-        self.cut_up = int(cut_up)
-        self.gap = int(gap)
-        self.freq = int(freq)
+        self._cut_lo = int(cut_lo)
+        self._cut_up = int(cut_up)
+        
+        self._gap = int(gap)
+        self._outer_cut = int(outer_cut)
+        
+    @property
+    def zarr_dire(self):
+        """str : Directory to store zarr files."""
+        return self._zarr_dire
         
     @property
     def fdr_cutoff(self):
-        """FDR cut-off for chromatin loops."""
+        """float : FDR cut-off for chromatin loops."""
         return self._fdr_cutoff
+    
+    @property
+    def loop_range(self):
+        """Tuple[int, int] : Loop size considered."""
+        return (self._cut_lo, self._cut_up)
+    
+    @property
+    def gap(self):
+        """int : Loop candidates `gap` away from each other are 
+        considered candidates for the same summit.
+        """
+        return self._gap
+    
+    @property
+    def outer_cut(self):
+        """int : Loci with 1D genomic distance within `outer_cut` from 
+        the target locus is included in the local background.
+        """
+        return self._outer_cut
         
     def loops_from_all_chr(
         self, 
@@ -598,7 +493,6 @@ class LoopCaller:
         for chr_id in pd.unique(self._data["Chrom"]):
             results = self.loops_from_single_chr(chr_id, ltclass)
             out_c = self.to_bedpe(results, chr_id)
-            # out.append(out_c[out_c["summit"]])
             out.append(out_c)
         if len(out) > 0:
             return pd.concat(out).reset_index(drop=True)
@@ -620,33 +514,22 @@ class LoopCaller:
         Returns
         -------
         dict
-            A dictionary with keys 'stat', 'pval', 'fdr', 'candidate', 
-            'label', 'summit'. Values are (p,p) matrices.
+            A dictionary with keys stat, pval, fdr, candidate, label, 
+            summit. Values are (p,p) matrices.
         """
-        chr_df = self._data[self._data["Chrom"]==chr_id]
-        ltobj = ltclass(chr_df)
-        chr_df_pivoted, arr = to_very_wide(chr_df)
+        carr = ChromArray(self._data[self._data["Chrom"]==chr_id])
+        carr.load_write(f"{self._zarr_dire}/{chr_id}")
+        test_class = ltclass(carr)
+        test_class.preprocess()
         
-        warnings.filterwarnings("ignore", "Mean of empty slice")
-        d1d = chr_df_pivoted.index.values
-        arr = ltobj.preprocess(d1d, arr)
-        I = d1d.shape[0]
-        result = {
-            "stat":np.zeros((I,I))*np.nan,
-            "pval":np.zeros((I,I))*np.nan
-        }
-        for i in range(I):
-            for j in range(i+1, I):
-                dist_1d = np.abs(d1d[i] - d1d[j])
-                if dist_1d < self.cut_lo or dist_1d > self.cut_up:
-                    continue
-                kept = ltobj.ij_background(i, j, d1d)
-                if np.sum(kept) == 0:
-                    continue
-                stat, pval = ltobj.test_func(arr[:,:,i,j], arr[:,:,kept])
-                result["stat"][i,j] = result["stat"][j,i] = stat
-                result["pval"][i,j] = result["pval"][j,i] = pval
-                    
+        result = {}
+        test_class.append_pval(
+            result=result,
+            cut_lo=self._cut_lo,
+            cut_up=self._cut_up,
+            outer_cut=self._outer_cut
+        )
+        
         pvals = result["pval"].copy()
         uidx = np.triu_indices_from(pvals, 1)
         triu_pvals = pvals[uidx].copy()
@@ -659,37 +542,13 @@ class LoopCaller:
         pvals.T[uidx] = pvals[uidx]
         result["fdr"] = pvals
         
-        self._fdr_to_summit(result, self._fdr_cutoff, d1d, arr, ltobj)
+        result["candidate"] = result["fdr"] < self._fdr_cutoff
+        result["label"] = self.spread_label(result["candidate"], carr.d1d)
+        
+        test_class.append_summit(result)
+        carr.close()
             
         return result
-    
-    def _to_freq_mat(self, arr, d1d):
-        """Calculate the contact frequency matrix."""
-        dmaps = np.sqrt(np.sum(np.square(arr), axis=1))
-        freq_dists = dmaps[:,np.abs(d1d[:,None] - d1d[None,:])==self.freq]
-        warnings.filterwarnings("ignore", r".*invalid value")
-        freq_mat = np.sum(dmaps<np.nanmean(freq_dists), axis=0)/\
-            np.sum(~np.isnan(dmaps), axis=0)
-        return freq_mat
-    
-    def _fdr_to_summit(self, result, fdr_cutoff, d1d, arr, ltobj):
-        """Identify summits from the FDR cutoff. `ltobj` can be 
-        uninitialized.
-        """
-        result["candidate"] = result["fdr"] < fdr_cutoff
-        # print("FDR cutoff:", ltobj.fdr_cutoff)
-        labeled = self.spread_label(result["candidate"], d1d)
-        
-        summits = np.zeros_like(labeled, dtype="bool")
-        freq_mat = self._to_freq_mat(arr, d1d)
-        for lab in np.unique(labeled[~np.isnan(labeled)]):
-            # keep only the triu part to compare p values
-            idx = np.where(np.triu(labeled)==lab)
-            max_i = np.argmin(result["pval"][idx])
-            ltobj.filter_summits(summits, freq_mat, idx, max_i)
-        
-        result["label"] = labeled
-        result["summit"] = summits
     
     def spread_label(
         self, 
@@ -781,7 +640,8 @@ class LoopCaller:
         out_df = out_df[["c1", "s1", "e1", "c2", "s2", "e2"]]
 
         for k, v in result.items():
-            out_df[k] = v[uidxs]
+            if v.shape == (len(d1df),len(d1df)):
+                out_df[k] = v[uidxs]
         # out_df = out_df.dropna(subset="stat")
         
         if out is None:

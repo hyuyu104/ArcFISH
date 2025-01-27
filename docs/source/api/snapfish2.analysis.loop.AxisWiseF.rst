@@ -10,18 +10,14 @@ AxisWiseF
 
    .. autosummary::
 
-      ~AxisWiseF.compute_cov
-      ~AxisWiseF.filter_summits
+      ~AxisWiseF.append_pval
+      ~AxisWiseF.append_summit
       ~AxisWiseF.ij_background
       ~AxisWiseF.preprocess
-      ~AxisWiseF.test_func
-      ~AxisWiseF.test_func_axis
 
    .. rubric:: Methods Documentation
 
-   .. automethod:: compute_cov
-   .. automethod:: filter_summits
+   .. automethod:: append_pval
+   .. automethod:: append_summit
    .. automethod:: ij_background
    .. automethod:: preprocess
-   .. automethod:: test_func
-   .. automethod:: test_func_axis

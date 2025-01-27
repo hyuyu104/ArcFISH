@@ -10,14 +10,14 @@ LoopTestAbstract
 
    .. autosummary::
 
-      ~LoopTestAbstract.filter_summits
+      ~LoopTestAbstract.append_pval
+      ~LoopTestAbstract.append_summit
       ~LoopTestAbstract.ij_background
       ~LoopTestAbstract.preprocess
-      ~LoopTestAbstract.test_func
 
    .. rubric:: Methods Documentation
 
-   .. automethod:: filter_summits
+   .. automethod:: append_pval
+   .. automethod:: append_summit
    .. automethod:: ij_background
    .. automethod:: preprocess
-   .. automethod:: test_func

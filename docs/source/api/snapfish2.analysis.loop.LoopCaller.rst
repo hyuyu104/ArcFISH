@@ -11,6 +11,10 @@ LoopCaller
    .. autosummary::
 
       ~LoopCaller.fdr_cutoff
+      ~LoopCaller.gap
+      ~LoopCaller.loop_range
+      ~LoopCaller.outer_cut
+      ~LoopCaller.zarr_dire
 
    .. rubric:: Methods Summary
 
@@ -24,6 +28,10 @@ LoopCaller
    .. rubric:: Attributes Documentation
 
    .. autoattribute:: fdr_cutoff
+   .. autoattribute:: gap
+   .. autoattribute:: loop_range
+   .. autoattribute:: outer_cut
+   .. autoattribute:: zarr_dire
 
    .. rubric:: Methods Documentation
 

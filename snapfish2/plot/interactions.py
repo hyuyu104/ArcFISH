@@ -5,6 +5,7 @@ import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from ..utils import cast_to_distmat
 from ..analysis.loop import LoopTestAbstract
@@ -297,3 +298,18 @@ def plot_TAD_boundary(
     warnings.filterwarnings("ignore")
     fig.tight_layout(pad=-fig.get_size_inches()[1]/10)
     return fig, axes
+
+
+def plot_AB_bars(cpmt_arr:np.ndarray, ax:plt.Axes):
+    ax_divider = make_axes_locatable(ax)
+    ax.spines[["left", "bottom", "right","top"]].set_visible(True)
+
+    cax1 = ax_divider.append_axes("right", size="5%", pad="0%", sharey=ax)
+    cax1.barh(np.where(cpmt_arr==0)[0], width=1, height=1, color="r")
+    cax1.spines[["right","top"]].set_visible(True)
+    cax1.set(xticks=[], xlabel="A")
+
+    cax2 = ax_divider.append_axes("right", size="5%", pad="0%", sharey=ax)
+    cax2.barh(np.where(cpmt_arr==1)[0], width=1, height=1, color="b")
+    cax2.spines[["right","top"]].set_visible(True)
+    cax2.set(xticks=[], xlabel="B")

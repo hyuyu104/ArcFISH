@@ -10,14 +10,14 @@ TwoSampleT
 
    .. autosummary::
 
-      ~TwoSampleT.filter_summits
+      ~TwoSampleT.append_pval
+      ~TwoSampleT.append_summit
       ~TwoSampleT.ij_background
       ~TwoSampleT.preprocess
-      ~TwoSampleT.test_func
 
    .. rubric:: Methods Documentation
 
-   .. automethod:: filter_summits
+   .. automethod:: append_pval
+   .. automethod:: append_summit
    .. automethod:: ij_background
    .. automethod:: preprocess
-   .. automethod:: test_func
