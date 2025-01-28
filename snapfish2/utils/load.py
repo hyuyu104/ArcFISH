@@ -1,5 +1,6 @@
 import os
 import shutil
+from typing import Tuple
 from typing import Callable
 import numpy as np
 import pandas as pd
@@ -173,6 +174,7 @@ class ChromArray:
             values=val_cols,
             sort=False
         )
+        self._trace_ids = chr_df_pivoted["X"].columns
         self._X = np.stack([
             chr_df_pivoted[v].values for v in val_cols
         ]).transpose(2, 1, 0)
@@ -256,6 +258,11 @@ class ChromArray:
     def normalized(self) -> bool:
         """bool: Whether the pairwise difference is normalized."""
         return self._root.attrs["normalized"]
+    
+    @property
+    def trace_ids(self) -> pd.Index:
+        """np.ndarray : Trace IDs."""
+        return self._trace_ids
     
     def normalize_inplace(self, nstds:float=4):
         """Stratify by 1D genomic distance and remove entries that are
@@ -361,20 +368,43 @@ class ChromArray:
         return weights
     
     def close(self):
+        """Remove the zarr directory created."""
         if os.path.exists(self._zarr_name):
             shutil.rmtree(self._zarr_name)
         
     
-def to_very_wide(df, func=lambda a,b: a-b):
+def to_very_wide(
+    df:pd.DataFrame, 
+    func:Callable=lambda a,b: a-b
+) -> Tuple[pd.DataFrame, np.ndarray]:
+    """Calculate pairwise differences. All calculations are in memory.
+    Use :class:`ChromArray` instead for large datasets (`p` or `n` is 
+    large).
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Data of a single chromosome in FOF_CT-core format.
+    func : Callable, optional
+        What pairwise function is used, by default lambda a,b: a-b,
+        which calculates the pairwise differences.
+
+    Returns
+    -------
+    Tuple[pd.DataFrame, np.ndarray]
+        A pivoted dataframe of 3D locations of imaged loci, rows being 
+        genomic locus and columns being trace IDs. An array of shape
+        (n,d,p,p) for pairwise differences.
+    """
+    val_cols = ["X", "Y", "Z"]
     chr_df_pivoted = df.pivot_table(
         index="Chrom_Start", 
         columns="Trace_ID", 
-        values=["X", "Y", "Z"],
+        values=val_cols,
         sort=False
     )
     
-    val_cols = ["X", "Y", "Z"]
-    # N x T x D
+    # Shape: n x p x d
     X = np.stack([
         chr_df_pivoted[v].values for v in val_cols
     ]).transpose(2, 1, 0)
@@ -382,21 +412,28 @@ def to_very_wide(df, func=lambda a,b: a-b):
     for x in X:
         d = func(x.T[:,None,:], x.T[:,:,None])
         arrs.append(d.transpose(0, 2, 1))
-    # N x D x T x T
+    # Shape: n x d x p x p
     arrs = np.stack(arrs)
     return chr_df_pivoted, arrs
 
 
-def cast_to_distmat(X:np.ndarray, func:Callable=np.nanmean) -> np.ndarray:
+def cast_to_distmat(
+    X:np.ndarray, func:Callable=np.nanmean
+) -> np.ndarray:
     """Cast the input array to a p by p matrix. Specfically,
+    
     1. X is a 1d array: treat X as the flattened upper triangle of a p*p
     matrix and refill it into a p*p matrix.
+    
     2. X is a p*p symmetric matrix: return X.
+    
     3. X is a p*d asymmetric matrix, where p might or might not equal to
     d: treat as the coordinates of a single trace, calculate the 
     pairwise distance matrix.
+    
     4. X is a n*p*p matrix, where X[i] is symmetric: apply func to each
     entry (e.g. func = np.nanmean, then this is averaging each entry).
+    
     5. X is a n*p*d matrix, where p might or might not equal to d: first
     convert to n*p*p by applying 3 to X[i] and then apply 4.
 

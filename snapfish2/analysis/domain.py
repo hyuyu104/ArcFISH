@@ -1,7 +1,9 @@
+import os
 import warnings
 import logging
 import numpy as np
 import pandas as pd
+import dask.array as da
 from scipy import stats
 from scipy.signal import find_peaks
 from scipy.ndimage import gaussian_filter
@@ -9,7 +11,7 @@ from statsmodels.stats import multitest as multi
 from sklearn.cluster import KMeans
 
 from .loop import AxisWiseF, DiffLoop
-from ..utils.load import to_very_wide
+from ..utils.load import ChromArray, to_very_wide
 
 # Define the display order
 __all__ = [
@@ -31,10 +33,15 @@ class TADCaller:
     def __init__(
         self,
         data:pd.DataFrame,
-        window:float
+        window:float,
+        zarr_dire:str
     ):
         self._data = data
         self._window = window
+        
+        if not os.path.exists(zarr_dire):
+            os.mkdir(zarr_dire)
+        self._zarr_dire = zarr_dire
         
     def by_pval(
         self,
@@ -59,14 +66,17 @@ class TADCaller:
         """
         results = []
         for chr_id in pd.unique(self._data["Chrom"]):
+            carr = ChromArray(self._data[self._data["Chrom"]==chr_id])
+            carr.load_write(os.path.join(self._zarr_dire, chr_id))
             result = self._single_chr_tad_by_pval(
-                chr_df=self._data[self._data["Chrom"]==chr_id],
-                window=self._window, fdr_cutoff=fdr_cutoff
+                carr=carr,
+                window=self._window, 
+                fdr_cutoff=fdr_cutoff
             )
-            result["c"] = chr_id
+            result["c1"] = chr_id
             results.append(result)
         result_df = pd.concat(results, ignore_index=True)
-        cols = ["c"] + result_df.columns.drop("c").to_list()
+        cols = ["c1"] + result_df.columns.drop("c1").to_list()
         return result_df[cols]
         
     def by_insulation(
@@ -105,55 +115,61 @@ class TADCaller:
                 window=self._window, 
                 prominence=prominence, distance=distance
             )
-            result["c"] = chr_id
+            result["c1"] = chr_id
             results.append(result)
         result_df = pd.concat(results, ignore_index=True)
-        cols = ["c"] + result_df.columns.drop("c").to_list()
+        cols = ["c1"] + result_df.columns.drop("c1").to_list()
         return result_df[cols]
     
     @staticmethod
     def _single_chr_tad_by_pval(
-        chr_df:pd.DataFrame,
+        carr:ChromArray,
         window:float,
         fdr_cutoff:float,
     ) -> pd.DataFrame:
         """Call TAD by axis-wise F-test."""
-        chr_df_pivoted, arr_raw = to_very_wide(chr_df)
-        d1d = chr_df_pivoted.index.values
-        ltobj = AxisWiseF(chr_df)
-        arr = ltobj.preprocess(d1d, arr_raw)
-        d, p = arr.shape[1:3]
+        carr.normalize_inplace()
+        entry_var = da.nanmean(da.square(carr.arr), axis=0).compute()
+        count = da.sum(~da.isnan(carr.arr), axis=0).compute()
+        weights = carr.axis_weights()
+        d1d = carr.d1d
 
+        # Jumps in d1d, no entries for inter region
+        warnings.filterwarnings("ignore", ".*divide by zero")
         rows = []
-        for i in range(p):
+        for i in range(len(d1d)):
             if d1d[i] - d1d[0] < window/2 or d1d[-1] - d1d[i] < window/2:
                 rows.append([d1d[i], np.nan, np.nan])
                 continue
 
             left, right = np.where(np.abs(d1d - d1d[i]) <= window)[0][[0,-1]]
             ls, rs = slice(left, i), slice(i+1, right+1)
-            
-            lflat = arr[:,:,ls,ls][:,:,*np.triu_indices(i-left,1)]
-            lflat = lflat.transpose((1,0,2)).reshape(d,-1)
-            rflat = arr[:,:,rs,rs][:,:,*np.triu_indices(right-i,1)]
-            rflat = rflat.transpose((1,0,2)).reshape(d,-1)
-            
-            flat_intra = np.hstack([lflat, rflat])
-            var_nume = np.nanmean(np.square(flat_intra), axis=1)
-            
-            flat_inter = arr[:,:,ls,rs].transpose((1,0,2,3)).reshape(d,-1)
-            var_deno = np.nanmean(np.square(flat_inter), axis=1)
-            
+
+            lcount = count[:,ls,ls][:,*np.triu_indices(i-left,1)]
+            rcount = count[:,rs,rs][:,*np.triu_indices(right-i,1)]
+            intra_count = np.hstack([lcount, rcount]).sum(axis=1)
+            lvar = entry_var[:,ls,ls][:,*np.triu_indices(i-left,1)]
+            rvar = entry_var[:,rs,rs][:,*np.triu_indices(right-i,1)]
+            var_nume = np.hstack([
+                lvar*(lcount/intra_count[:,None]),
+                rvar*(rcount/intra_count[:,None])
+            ]).sum(axis=1)
+
+            inter_count = np.sum(count[:,ls,rs], axis=(1,2))
+            wts = count[:,ls,rs]/inter_count[:,None,None]
+            var_deno = np.sum(entry_var[:,ls,rs]*wts, axis=(1,2))
+
             f_stats = var_nume/var_deno
-            n1 = np.sum(~np.isnan(flat_intra), axis=1)
-            n2 = np.sum(~np.isnan(flat_inter), axis=1)
-            f_pvals = stats.f.cdf(f_stats, n1, n2)
+            f_pvals = stats.f.cdf(f_stats, intra_count, inter_count)
             
-            act_stat = np.sum(ltobj.weights*np.tan((0.5 - f_pvals)*np.pi))
+            act_stat = np.sum(weights*np.tan((0.5 - f_pvals)*np.pi))
             p_val_act = 1 - stats.cauchy.cdf(act_stat)
-            rows.append([d1d[i], act_stat, p_val_act])
+            rows.append([d1d[i], *f_stats, *f_pvals, act_stat, p_val_act])
             
-        result = pd.DataFrame(rows, columns=["1D", "stat", "pval"])
+        result = pd.DataFrame(rows, columns=[
+            "1D", "stat_x", "stat_y", "stat_z",
+            "pval_x", "pval_y", "pval_z", "stat", "pval"
+        ])
         
         fdr_arr = result["pval"].copy()
         avail_idx = ~np.isnan(fdr_arr)
@@ -255,7 +271,7 @@ class TADCaller:
             be integers increasing from the smaller to larger TADs.
         """
         rows = []
-        for chr_id, val in result.groupby("c", sort=False):
+        for chr_id, val in result.groupby("c1", sort=False):
             val = val.reset_index(drop=True)
             end_map = (
                 self._data[self._data["Chrom"]==chr_id]
@@ -314,14 +330,20 @@ class ABCaller:
         Data in FOF-CT_core format with no repeating rows.
     min_comp_size : float
         Minimum compartment size in bp.
+    zarr_dire : str
+        Directory to store zarr file generated during calculation.
     """
     def __init__(
         self, 
         data:pd.DataFrame, 
-        min_cpmt_size:float
+        min_cpmt_size:float,
+        zarr_dire:str
     ):
         self._data = data
         self._min_cpmt_size = min_cpmt_size
+        if not os.path.exists(zarr_dire):
+            os.mkdir(zarr_dire)
+        self._zarr_dire = zarr_dire
         
     def by_axes_pc(self) -> dict:
         """Call A/B compartments by weighting the 2nd PC from different
@@ -331,58 +353,69 @@ class ABCaller:
         -------
         dict
             A dictionary with key being the Chrom name and value being
-            an (2, p) array, with the first column being the 1D genomic
-            location, and the second column being integers of 0 and 1.
+            an (8, p) array, with the first column being the 1D genomic
+            location, the second column being integers of 0 and 1, where
+            0 indicates A compartments, the 3-5 columns are the second
+            eigenvectors from each axis, and the 6-8 columns are the 
+            weighted second eigenvectors.
         """
         result = {}
         for chr_id in pd.unique(self._data["Chrom"]):
-            chr_df = self._data[self._data["Chrom"]==chr_id]
+            carr = ChromArray(self._data[self._data["Chrom"]==chr_id])
+            carr.load_write(os.path.join(self._zarr_dire, chr_id))
             result[chr_id] = self._single_chr_ab_by_axes_pc(
-                chr_df, min_cpmt_size=self._min_cpmt_size
+                carr=carr, 
+                min_cpmt_size=self._min_cpmt_size
             )
         return result
 
     @staticmethod
     def _single_chr_ab_by_axes_pc(
-        chr_df:pd.DataFrame, min_cpmt_size:float
+        carr:ChromArray, min_cpmt_size:float
     ) -> np.ndarray:
         """Perform PCA on each axis, weight axes, KMeans clustering, and
         merge small compartments.
         """
-        chr_df_pivoted, arr = to_very_wide(chr_df)
-        d1d = chr_df_pivoted.index.values
-        
-        if min_cpmt_size > np.ptp(d1d):
+        carr.normalize_inplace()
+
+        if min_cpmt_size > np.ptp(carr.d1d):
             raise ValueError(
                 "Minimum compartment size larger than the imaging region."
             )
-                
-        uidx = np.triu_indices(arr.shape[-1], 1)
-        abs_axes = np.abs(arr)
-        cutoffs = np.nanquantile(abs_axes[:,:,*uidx], .75, axis=[0,2])
-        frac_mat = np.stack([
-            np.sum(arr[:,i,:,:] < c, axis=0)
-            for i, c in enumerate(cutoffs)
-        ])/np.sum(~np.isnan(abs_axes), axis=0)
+        med_sq = da.nanmedian(da.square(carr.arr), axis=0).compute()
+        # Already normalized. 
+        # Hollowed or not does not matter. Same eigenspace.
+        Vs = np.linalg.eigh(np.exp(-med_sq))[1]
+        wts = carr.axis_weights()
+        cpmt_arr = KMeans(
+            n_clusters=2, 
+            random_state=0    
+        ).fit_predict((Vs[:,:,-2]*wts[:,None]).T)
         
-        if np.sum(np.isnan(frac_mat)) > 0:
-            raise ValueError("Pairwise difference matrix has holes.")    
-        v2s = np.linalg.eigh(frac_mat)[1][:,:,-2]
-        # Flip to align eigenvectors
-        for i, v in enumerate(v2s[1:]):
-            diff1 = np.sum(np.abs(np.sign(v2s[0]) - np.sign(v)))
-            diff2 = np.sum(np.abs(np.sign(v2s[0]) + np.sign(v)))
-            if diff1 > diff2:
-                v2s[i+1] = -v
-                
-        wts = AxisWiseF(chr_df).weights
-        wtarr = v2s*wts[:,None]
+        cpmt_arr = ABCaller._filter_small_cmpt(
+            cpmt_arr=cpmt_arr,
+            min_cpmt_size=min_cpmt_size,
+            d1d=carr.d1d
+        )
         
-        cpmt_arr = KMeans(2, random_state=0).fit_predict(wtarr.T)
-        cpmt_arr = ABCaller._filter_small_cmpt(cpmt_arr, min_cpmt_size, d1d)
-        return np.stack([d1d, cpmt_arr])
+        idx0 = (cpmt_arr==0)[:,None]*(cpmt_arr==0)[None,:]
+        med0 = np.nanmedian(med_sq[:,idx0], axis=1)
+
+        idx1 = (cpmt_arr==1)[:,None]*(cpmt_arr==1)[None,:]
+        med1 = np.nanmedian(med_sq[:,idx1], axis=1)
+
+        mode = stats.mode((med0 < med1).astype("int64"))[0]
+        if mode == 1:
+            cpmt_arr = np.where(cpmt_arr==0, 1, 0)
         
-    def by_first_pc(self, sigma:float=1) -> dict:
+        return np.stack([
+            carr.d1d, 
+            cpmt_arr, 
+            *Vs[:,:,-2],
+            *(Vs[:,:,-2]*wts[:,None])
+        ])
+        
+    def by_first_pc(self, cutoff:float, sigma:float=1) -> dict:
         """Call A/B compartments by first PCA. Adopted from
         Su, J.-H., Zheng, P., Kinrot, S. S., Bintu, B. & Zhuang, X. 
         Genome-Scale Imaging of the 3D Organization and Transcriptional 
@@ -390,6 +423,8 @@ class ABCaller:
         
         Parameters
         ----------
+        cutoff: float
+            Distance below `cutoff` is defined as contact.
         sigma : float, optional
             Gaussian kernel size, by default 1.
 
@@ -402,62 +437,42 @@ class ABCaller:
         """
         result = {}
         for chr_id in pd.unique(self._data["Chrom"]):
-            chr_df = self._data[self._data["Chrom"]==chr_id]
-            chr_df_pivoted, arr = to_very_wide(chr_df)
-            d1d = chr_df_pivoted.index.values
-            if self._min_cpmt_size > np.ptp(d1d):
-                raise ValueError(
-                    "Minimum compartment size larger than the imaging region."
-                )
-            
-            dist_mats = np.sqrt(np.sum(np.square(arr), axis=1))
-            triu_val = dist_mats[:,*np.triu_indices(len(d1d), 1)]
-            cutoff = np.quantile(triu_val[~np.isnan(triu_val)], .75)
-            logging.info(f"{chr_id} cutoff set to {cutoff}")
-            
-            cpmt_arr = self._single_chr_ab_by_first_pc(
-                arr=arr, 
-                d1d=d1d, 
+            carr = ChromArray(self._data[self._data["Chrom"]==chr_id])
+            carr.load_write(os.path.join(self._zarr_dire, chr_id))
+            result[chr_id] = self._single_chr_ab_by_first_pc(
+                carr=carr,
+                min_cpmt_size=self._min_cpmt_size,
                 cutoff=cutoff,
                 sigma=sigma
             )
-            cpmt_arr = self._filter_small_cmpt(
-                cpmt_arr=cpmt_arr,
-                min_cpmt_size=self._min_cpmt_size,
-                d1d=d1d
-            )
-            result[chr_id] = np.stack([d1d, cpmt_arr])
-            
         return result
             
     @staticmethod
     def _single_chr_ab_by_first_pc(
-        arr:np.ndarray,
-        d1d:np.ndarray,
+        carr:ChromArray,
+        min_cpmt_size:float,
         cutoff:float,
-        sigma:float=1
+        sigma:float
     ) -> np.ndarray:
         """Call A/B compartments from a single chromosome.
 
         Parameters
         ----------
-        arr : (n, d, p, p) np.ndarray
-            Pairwise difference matrices of all chromatin traces.
-        d1d : (p,) np.ndarray
-            Array of 1D genomic locations of imaging loci.
+        carr : ChromArray
+            Pairwise difference array.
         min_comp_size : float
             Minimum compartment size in bp.
         cutoff : float
             Distance below cutoff is treated as contact.
         sigma : float, optional
-            Gaussian kernel size, by default 1.
+            Gaussian kernel size.
 
         Returns
         -------
         np.ndarray
             An array of 0 and 1 of the same length as the number of
-            genomic loci. 0 represents B compartments and 1 represents
-            A compartments.
+            genomic loci. 0 represents A compartments and 1 represents
+            B compartments.
 
         Raises
         ------
@@ -465,13 +480,18 @@ class ABCaller:
             If the minimum compartment size is larger than the imaging
             region.
         """
+        if min_cpmt_size > np.ptp(carr.d1d):
+            raise ValueError(
+                "Minimum compartment size larger than the imaging region."
+            )
         # (n, p, p) pairwise distance matrices for each trace
-        dist_mats = np.sqrt(np.sum(np.square(arr), axis=1))
+        dist_mats = da.sqrt(da.sum(da.square(carr.arr), axis=1))
         # (p, p) pseudo contact map
-        contact_mat = np.sum(dist_mats < cutoff, axis=0)\
-            /np.sum(~np.isnan(dist_mats), axis=0)
+        contact_mat = da.sum(dist_mats < cutoff, axis=0)\
+            /da.sum(~da.isnan(dist_mats), axis=0)
+        contact_mat = contact_mat.compute()
             
-        d1d_mat = np.abs(d1d[:,None] - d1d[None,:])
+        d1d_mat = np.abs(carr.d1d[:,None] - carr.d1d[None,:])
         uidx = np.triu_indices_from(d1d_mat, 1)
         d1d_flat = d1d_mat[uidx]
         contact_flat = contact_mat[uidx]
@@ -506,7 +526,22 @@ class ABCaller:
         U, S, Vh = np.linalg.svd(X)
         cpmt_arr = ((np.sign(U[1]*S[1])+1)/2).astype("int")
         
-        return cpmt_arr
+        cpmt_arr = ABCaller._filter_small_cmpt(
+            cpmt_arr=cpmt_arr,
+            min_cpmt_size=min_cpmt_size,
+            d1d=carr.d1d
+        )
+        
+        idx0 = (cpmt_arr==0)[:,None]*(cpmt_arr==0)[None,:]
+        med0 = np.nanmedian(contact_mat_norm[idx0])
+
+        idx1 = (cpmt_arr==1)[:,None]*(cpmt_arr==1)[None,:]
+        med1 = np.nanmedian(contact_mat_norm[idx1])
+
+        if med0 > med1:
+            cpmt_arr = np.where(cpmt_arr==0, 1, 0)
+        
+        return np.stack([carr.d1d, cpmt_arr])
     
     @staticmethod
     def _filter_small_cmpt(
@@ -514,7 +549,7 @@ class ABCaller:
         min_cpmt_size:float, 
         d1d:np.ndarray
     ) -> np.ndarray:
-        """Merge small compartments by flipping their signs."""
+        """Merge small compartments by flipping their assignments."""
         # Flip the sign if the cpmtartment is too small
         while True:
             pos_ls = []
@@ -609,13 +644,18 @@ class DiffRegion(DiffLoop):
         result_ls = []
         for chr_id in pd.unique(region_df["c1"]):
             chr_df = self._data[self._data["Chrom"]==chr_id]
-            f_pvals = self.entry_pvals(chr_df)
-            weights = self.compute_weights(chr_df)
+            carr = ChromArray(chr_df)
+            carr.load_write(os.path.join(self._zarr_dire, chr_id))
+            carr.normalize_inplace(nstds=4)
+            
+            f_pvals = self.entry_pvals(chr_df, carr)
+            
+            weights = carr.axis_weights()
             
             df = self.region_pvals(
                 weights=weights,
                 f_pvals=f_pvals,
-                chr_df=chr_df,
+                d1d=carr.d1d,
                 region_df=region_df[region_df["c1"]==chr_id]
             )
             result_ls.append(df)
@@ -627,7 +667,7 @@ class DiffRegion(DiffLoop):
     def region_pvals(
         weights:np.ndarray, 
         f_pvals:np.ndarray,
-        chr_df:pd.DataFrame, 
+        d1d:np.ndarray, 
         region_df:pd.DataFrame
     ) -> pd.DataFrame:
         """Aggregate p-values within a region and across axis. Assign
@@ -636,13 +676,12 @@ class DiffRegion(DiffLoop):
         Parameters
         ----------
         weights : (d,) np.ndarray
-            Weight for each axis calculated by 
-            :func:`compute_weights`.
+            Weight for each axis.
         f_pvals : (d, p, p) np.ndarray
-            Entry-wise p-values returned by func:`entry_pvals`.
-        chr_df : pd.DataFrame
-            Data of a single chromosome from both conditions in 
-            FOF-CT_core format.
+            Entry-wise p-values returned by 
+            func:`snapfish2.analysis.loop.DiffLoop.entry_pvals`.
+        d1d : np.ndarray
+            1D genomic locations.
         region_df : pd.DataFrame
             A dataframe containing a list of regions to check.
 
@@ -654,8 +693,6 @@ class DiffRegion(DiffLoop):
         """
         act_stats = []
         for _, row in region_df.iterrows():
-            d1d = to_very_wide(chr_df)[0].index.values
-            
             idx = (d1d >= row["s1"])&(d1d <= row["s2"])
             sub_pvals = f_pvals[:,idx][:,:,idx]
             uidx = np.triu_indices(sub_pvals.shape[-1], 1)

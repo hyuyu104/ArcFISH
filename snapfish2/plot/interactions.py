@@ -165,44 +165,22 @@ def compare_loops(
     
     return ax
 
-
-def add_boundary(
-    ax:plt.axis, 
-    boundary:np.array,
-    cmap:plt.cm=plt.get_cmap("Set3"),
-    label:dict=None,
-    **kwargs
-):
-    if label is None:
-        label = {k:k for k in pd.unique(boundary)}
-    pos_dict = {t:[] for t in label}
-    for i, r in enumerate(boundary):
-        if i == 0 or r != boundary[i-1]:
-            pos_dict[r].append([i, i+1])
-        else:
-            pos_dict[r][-1][1] = i+1
-
-    colors = {t:cmap(i) for i, t in enumerate(pos_dict.keys())}
-    legends = []
-    for k, v in pos_dict.items():
-        legends.append(Line2D([0], [0], color=colors[k], lw=3, label=label[k]))
-        if k >= 0:
-            for s, e in v:
-                ax.plot([s,e,e,s,s], [s,s,e,e,s], color=colors[k], **kwargs)
-    ax.legend(handles=legends, loc="lower left", labelcolor="linecolor")
-    
     
 def plot_TAD_boundary(
     result:pd.DataFrame, 
     bedpe:pd.DataFrame, 
     cols:list, 
+    ax:plt.Axes,
     tad_colors:list, 
     line_colors:list,
-    line_lim:dict | None=None,
+    line_names:list=None,
     diff:bool=False,
+    rotation:float=0,
+    size:str="8%",
     **kwargs
-) -> Tuple[plt.Figure, plt.Axes]:
-    """Plot TAD boundaries along with scores.
+) -> list[plt.Axes]:
+    """Plot TAD boundaries on a heatmap and a list of scores on the left
+    of the heatmap.
 
     Parameters
     ----------
@@ -216,100 +194,114 @@ def plot_TAD_boundary(
         A list of columns in result to plot alongside the boundaries. 
         Can be stat, pval, and fdr for results called by p-values, or 
         insulation for results called by insulation scores.
+    ax : plt.Axes
+        Heatmap ax to add TAD boundaries and scores.
     tad_colors : list
         A list of colors at least of the same length as the number of 
         unique levels in `bedpe`. This will be the TAD boundary colors.
     line_colors : list
         A list of colors at least of the same length as `cols`.
-    line_lim : dict | None, optional
-        The xlim of scores in `cols`, by default None.
+    line_names : list, optional
+        Same length as `cols`. Displayed names of `cols`. If None, will
+        use `cols` as `line_names`, by default None.
     diff : bool, optional
         Whether to show the p-values and FDR from differential TAD 
         calling, by default False. If True, have to replace `bedpe` by
-        result from :func:`snapfish2.analysis.domain.DiffRegion.diff_region`.
+        result from 
+        :func:`snapfish2.analysis.domain.DiffRegion.diff_region`.
+    rotation : float, optional
+        Rotation of score labels, by default 0.
+    size : str, optional
+        The width of score columns, by default `8%`.
 
     Returns
     -------
-    Tuple[plt.Figure, plt.Axes]
-        fig, axes.
+    list[plt.Axes]
+        Score column axes.
     """
     result = result.reset_index(drop=True)
     bedpe = bedpe.reset_index(drop=True)
     
-    fig, axes = plt.subplots(
-        1, len(cols) + 1, width_ratios=[3.6] + [.5]*len(cols),
-        figsize=(3.6 + .5*len(cols), 3), sharey=True
-    )
-    if len(cols) == 0:
-        axes = [axes]
+    ax.spines[["left", "bottom", "right","top"]].set_visible(True)
 
-    if "level" not in bedpe:
-        pos_ls = result[result["peak"]].index.values
-        for i in range(len(pos_ls)+1):
-            s = pos_ls[i-1] if i != 0 else 0
-            e = pos_ls[i] if i != len(pos_ls) else len(result)
-            axes[0].plot(
+    for lvl in np.unique(bedpe.level)[::-1]:
+        df = bedpe[bedpe["level"]==lvl]
+        for _, row in df.iterrows():
+            s = row.idx1
+            # Plotting correction for last index
+            if row.idx2 != len(result) - 1:
+                e = row.idx2
+            else:
+                e = row.idx2 + 1
+            ax.plot(
                 [s,e,e,s,s], [s,s,e,e,s], 
-                color=tad_colors[0], **kwargs
+                color=tad_colors[lvl], **kwargs
             )
             if diff:
                 text = f"Pval={row["pval"]:.2f}\nFDR={row["fdr"]:.2f}"
-                axes[0].text(
-                    e, s+.1, text, fontdict={"fontsize":8},
+                ax.text(
+                    e, s+.1, text, fontdict={"fontsize":8}, color="k",
                     horizontalalignment="right", verticalalignment="top"
                 )
-    else:
-        for lvl in np.unique(bedpe.level)[::-1]:
-            df = bedpe[bedpe["level"]==lvl]
-            for _, row in df.iterrows():
-                s = row.idx1
-                # Plotting correction for last index
-                if row.idx2 != len(result) - 1:
-                    e = row.idx2
-                else:
-                    e = row.idx2 + 1
-                axes[0].plot(
-                    [s,e,e,s,s], [s,s,e,e,s], 
-                    color=tad_colors[lvl], **kwargs
-                )
-                if diff:
-                    text = f"Pval={row["pval"]:.2f}\nFDR={row["fdr"]:.2f}"
-                    axes[0].text(
-                        e, s+.1, text, fontdict={"fontsize":8}, color="k",
-                        horizontalalignment="right", verticalalignment="top"
-                    )
-        pos_ls = pd.unique(np.concatenate(bedpe[["idx1", "idx2"]].values))
+    pos_ls = pd.unique(np.concatenate(bedpe[["idx1", "idx2"]].values))[1:-1]
 
+    ax_divider = make_axes_locatable(ax)
+    caxs = []
     for i, col in enumerate(cols):
+        cax = ax_divider.append_axes("left", size=size, pad="0%", sharey=ax)
         sns.lineplot(
-            x=result[col], y=result.index, color=line_colors[i], 
-            orient="y", ax=axes[i+1]
+            x=result[col], y=result.index, ax=cax,
+            orient="y", color=line_colors[i], 
         )
-        # axes[i+1].xaxis.tick_top()
-        axes[i+1].xaxis.set_label_position("top")
+        cax.set(xticks=[])
+        if line_names is None:
+            cax.set_xlabel(col, rotation=rotation)
+        else:
+            cax.set_xlabel(line_names[i], rotation=rotation)
+        cax.spines[["right","top"]].set_visible(True)
+        xmin, xmax = cax.get_xlim()
         
-        if line_lim is not None and col in line_lim:
-            axes[i+1].set_xlim(line_lim[col])
-        xmin, xmax = axes[i+1].get_xlim()
-        axes[i+1].hlines(pos_ls, xmin=xmin, xmax=xmax, linestyles="--")
-        axes[i+1].set(ylabel="", xlabel=col.title())
-        axes[i+1].spines[["right"]].set_visible(True)
+        cax.hlines(
+            pos_ls, linestyles="--", color=tad_colors[0], 
+            xmin=xmin, xmax=xmax, **kwargs
+        )
+        caxs.append(cax)
     
-    warnings.filterwarnings("ignore")
-    fig.tight_layout(pad=-fig.get_size_inches()[1]/10)
-    return fig, axes
+    return caxs
 
 
-def plot_AB_bars(cpmt_arr:np.ndarray, ax:plt.Axes):
+def plot_AB_bars(
+    cpmt_arr:np.ndarray, 
+    ax:plt.Axes,
+    size:str="5%",
+    ca:str="r",
+    cb:str="b"
+):
+    """Add A/B compartment assignments to a heatmap.
+
+    Parameters
+    ----------
+    cpmt_arr : (p,) np.ndarray
+        A/B compartment assignments. An array of zeros and ones, where
+        zeros are A compartments.
+    ax : plt.Axes
+        Heatmap ax to add A/B compartment assignments.
+    size : str, optional
+        The width of A/B compartment column, by default "5%".
+    ca : str, optional
+        Color of A compartments, by default "r".
+    cb : str, optional
+        Color of B compartments, by default "b".
+    """
     ax_divider = make_axes_locatable(ax)
     ax.spines[["left", "bottom", "right","top"]].set_visible(True)
 
-    cax1 = ax_divider.append_axes("right", size="5%", pad="0%", sharey=ax)
-    cax1.barh(np.where(cpmt_arr==0)[0], width=1, height=1, color="r")
+    cax1 = ax_divider.append_axes("left", size=size, pad="0%", sharey=ax)
+    cax1.barh(np.where(cpmt_arr==1)[0], width=1, height=1, color=cb)
     cax1.spines[["right","top"]].set_visible(True)
-    cax1.set(xticks=[], xlabel="A")
-
-    cax2 = ax_divider.append_axes("right", size="5%", pad="0%", sharey=ax)
-    cax2.barh(np.where(cpmt_arr==1)[0], width=1, height=1, color="b")
+    cax1.set(xticks=[], xlabel="B")
+    
+    cax2 = ax_divider.append_axes("left", size=size, pad="0%", sharey=ax)
+    cax2.barh(np.where(cpmt_arr==0)[0], width=1, height=1, color=ca)
     cax2.spines[["right","top"]].set_visible(True)
-    cax2.set(xticks=[], xlabel="B")
+    cax2.set(xticks=[], xlabel="A")

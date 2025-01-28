@@ -518,7 +518,7 @@ class LoopCaller:
             summit. Values are (p,p) matrices.
         """
         carr = ChromArray(self._data[self._data["Chrom"]==chr_id])
-        carr.load_write(f"{self._zarr_dire}/{chr_id}")
+        carr.load_write(os.path.join(self._zarr_dire, chr_id))
         test_class = ltclass(carr)
         test_class.preprocess()
         
@@ -658,32 +658,23 @@ class DiffLoop:
         Condition 1 data in FOF-CT_core format with no repeating rows.
     data2 : pd.DataFrame
         Condition 2 data in FOF-CT_core format with no repeating rows.
+    zarr_dire : str
+        Directory to store zarr file generated during calculation.
     """
-    def __init__(self, data1:pd.DataFrame, data2:pd.DataFrame):
+    def __init__(
+        self, 
+        data1:pd.DataFrame, 
+        data2:pd.DataFrame,
+        zarr_dire:str
+    ):
         d1, d2 = data1.copy(), data2.copy()
         d1["sf_grp"] = 1
         d2["sf_grp"] = 2
         self._data = pd.concat([d1, d2], ignore_index=True)
         
-    @staticmethod
-    def compute_weights(chr_df:pd.DataFrame) -> np.ndarray:
-        """Compute the weight for each axis by calling
-        :func:`snapfish2.loop.caller.AxisWiseF.compute_cov`.
-
-        Parameters
-        ----------
-        chr_df : pd.DataFrame
-            Data of a single chromosome in FOF-CT_core format.
-
-        Returns
-        -------
-        (d,) np.ndarray
-            Weight for each axis.
-        """
-        covs = AxisWiseF.compute_cov(chr_df)
-        weights = np.array([1/np.median(c) for c in covs])
-        weights = weights/np.sum(weights)
-        return weights
+        if not os.path.exists(zarr_dire):
+            os.mkdir(zarr_dire)
+        self._zarr_dire = zarr_dire
     
     def diff_loops(
         self, 
@@ -716,15 +707,18 @@ class DiffLoop:
                 (summit_df["c1"]==chr_id)&(summit_df["c2"]==chr_id)
             ]
             chr_df = self._data[self._data["Chrom"]==chr_id]
+            carr = ChromArray(chr_df)
+            carr.load_write(os.path.join(self._zarr_dire, chr_id))
+            carr.normalize_inplace(nstds=4)
             
-            results["f_pvals"] = self.entry_pvals(chr_df)
+            results["f_pvals"] = self.entry_pvals(chr_df, carr)
             
-            weights = self.compute_weights(chr_df)
+            weights = carr.axis_weights()
             
             agg_p_mat, idx = self.loop_pvals(
                 weights, 
                 results["f_pvals"], 
-                chr_df, 
+                carr.d1d, 
                 summit_chr, 
                 s=s, 
                 full_agg_pval=full_agg_pval
@@ -736,7 +730,10 @@ class DiffLoop:
         return result_all
         
     @staticmethod
-    def entry_pvals(chr_df:pd.DataFrame) -> np.ndarray:
+    def entry_pvals(
+        chr_df:pd.DataFrame, 
+        carr:ChromArray    
+    ) -> np.ndarray:
         """Calculate axis-wise entry-wise p-values by F-tests.
 
         Parameters
@@ -744,28 +741,28 @@ class DiffLoop:
         chr_df : pd.DataFrame
             Data of a single chromosome from both conditions in 
             FOF-CT_core format.
+        carr : ChromArray
+            Data of a single chromosome, loaded and normalized.
 
         Returns
         -------
         (d, p, p) np.ndarray
             Axis-wise entry-wise p-values.
         """
-        chr_df_pivoted, arrs = to_very_wide(chr_df)
-        d1d = chr_df_pivoted.index.values
-        # Normalize both groups together
-        arrs = AxisWiseF.preprocess(d1d, arrs)
-
+        if not carr.normalized:
+            raise ValueError("Array should be normalized.")
+        
         grp1_tids = chr_df[chr_df["sf_grp"]==1].Trace_ID.unique()
         grp2_tids = chr_df[chr_df["sf_grp"]==2].Trace_ID.unique()
 
-        arr1 = arrs[chr_df_pivoted["X"].columns.isin(grp1_tids)]
-        arr2 = arrs[chr_df_pivoted["X"].columns.isin(grp2_tids)]
+        arr1 = carr.arr[carr.trace_ids.isin(grp1_tids)]
+        arr2 = carr.arr[carr.trace_ids.isin(grp2_tids)]
 
         warnings.filterwarnings("ignore", "Mean of empty slice")
-        var1 = np.nanmean(np.square(arr1), axis=0)
-        count1 = np.sum(~np.isnan(arr1), axis=0)
-        var2 = np.nanmean(np.square(arr2), axis=0)
-        count2 = np.sum(~np.isnan(arr2), axis=0)
+        var1 = da.nanmean(da.square(arr1), axis=0).compute()
+        count1 = da.sum(~da.isnan(arr1), axis=0).compute()
+        var2 = da.nanmean(da.square(arr2), axis=0).compute()
+        count2 = da.sum(~da.isnan(arr2), axis=0).compute()
 
         warnings.filterwarnings("ignore", "divide by zero")
         f_pvals = stats.f.cdf(var1/var2, count1, count2)
@@ -777,7 +774,7 @@ class DiffLoop:
     def loop_pvals(
         weights:np.ndarray, 
         f_pvals:np.ndarray, 
-        chr_df:pd.DataFrame, 
+        d1d:np.ndarray, 
         summit_chr:pd.DataFrame, 
         s:float=5e3, 
         full_agg_pval:bool=True
@@ -790,13 +787,11 @@ class DiffLoop:
         Parameters
         ----------
         weights : (d,) np.ndarray
-            Weight for each axis calculated by 
-            :func:`compute_weights`.
+            Weight for each axis.
         f_pvals : (d, p, p) np.ndarray
             Entry-wise p-values returned by func:`entry_pvals`.
-        chr_df : pd.DataFrame
-            Data of a single chromosome from both conditions in 
-            FOF-CT_core format.
+        d1d : np.ndarray
+            1D genomic locations.
         summit_chr : pd.DataFrame
             List of loops within the chromosome to check.
         s : float, optional
@@ -810,9 +805,6 @@ class DiffLoop:
         Tuple[(p, p) np.ndarray, Tuple[np.ndarray, np.ndarray]]
             Aggregated p-values and indices of the summits.
         """
-        chr_df_pivoted = to_very_wide(chr_df)[0]
-        d1d = chr_df_pivoted.index.values
-        
         # Select entries corresponding to loop summits
         d1d_sr = pd.Series(np.arange(len(d1d)), index=d1d)
         iidx = d1d_sr[summit_chr.s1].values
@@ -871,7 +863,7 @@ class DiffLoop:
         fdrs.T[idx] = fdrs[idx]
         return fdrs
         
-    def to_bedpe_loop(
+    def to_bedpe(
         self, 
         result_all:dict, 
         fdr_cutoff:float,

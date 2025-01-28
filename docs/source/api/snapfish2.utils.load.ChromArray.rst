@@ -15,6 +15,7 @@ ChromArray
       ~ChromArray.d1d
       ~ChromArray.normalized
       ~ChromArray.root
+      ~ChromArray.trace_ids
 
    .. rubric:: Methods Summary
 
@@ -33,6 +34,7 @@ ChromArray
    .. autoattribute:: d1d
    .. autoattribute:: normalized
    .. autoattribute:: root
+   .. autoattribute:: trace_ids
 
    .. rubric:: Methods Documentation
 

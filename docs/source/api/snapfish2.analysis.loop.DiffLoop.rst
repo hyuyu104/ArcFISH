@@ -10,18 +10,16 @@ DiffLoop
 
    .. autosummary::
 
-      ~DiffLoop.compute_weights
       ~DiffLoop.diff_loops
       ~DiffLoop.entry_pvals
       ~DiffLoop.loop_pvals
       ~DiffLoop.pval_to_fdr
-      ~DiffLoop.to_bedpe_loop
+      ~DiffLoop.to_bedpe
 
    .. rubric:: Methods Documentation
 
-   .. automethod:: compute_weights
    .. automethod:: diff_loops
    .. automethod:: entry_pvals
    .. automethod:: loop_pvals
    .. automethod:: pval_to_fdr
-   .. automethod:: to_bedpe_loop
+   .. automethod:: to_bedpe
