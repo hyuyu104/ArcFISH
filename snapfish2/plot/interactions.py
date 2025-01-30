@@ -27,9 +27,11 @@ def pairwise_heatmap(
     Parameters
     ----------
     X1 : np.ndarray
-        First heatmap data, passed to `cast_to_distmat`.
+        First heatmap data, passed to 
+        :func:`snapfish2.utils.load.cast_to_distmat`.
     X2 : np.ndarray, optional
-        Second data, passed to `cast_to_distmat`, by default None.
+        Second data, passed to 
+        :func:`snapfish2.utils.load.cast_to_distmat`, by default None.
     ax : plt.axis, optional
         Axis to plot the heatmap, by default None.
     x : str, optional

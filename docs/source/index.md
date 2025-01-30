@@ -9,6 +9,7 @@ figures/0algorithm
 figures/1loop_benchmark
 figures/2tad_benchmark
 figures/3differential
+figures/4cpmt_benchmark
 ```
 
 ```{toctree}

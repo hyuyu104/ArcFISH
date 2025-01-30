@@ -422,20 +422,20 @@ def cast_to_distmat(
 ) -> np.ndarray:
     """Cast the input array to a p by p matrix. Specfically,
     
-    1. X is a 1d array: treat X as the flattened upper triangle of a p*p
-    matrix and refill it into a p*p matrix.
+    1. X is a 1d array: treat X as the flattened upper triangle of a
+    (p,p) matrix and refill it into a p*p matrix.
     
-    2. X is a p*p symmetric matrix: return X.
+    2. X is a (p,p) symmetric matrix: return X.
     
-    3. X is a p*d asymmetric matrix, where p might or might not equal to
-    d: treat as the coordinates of a single trace, calculate the 
+    3. X is a (p,d) asymmetric matrix, where p might or might not equal 
+    to d: treat as the coordinates of a single trace, calculate the 
     pairwise distance matrix.
     
-    4. X is a n*p*p matrix, where X[i] is symmetric: apply func to each
+    4. X is a (n,p,p) matrix, where X[i] is symmetric: apply func to each
     entry (e.g. func = np.nanmean, then this is averaging each entry).
     
-    5. X is a n*p*d matrix, where p might or might not equal to d: first
-    convert to n*p*p by applying 3 to X[i] and then apply 4.
+    5. X is a (n,p,d) matrix, where p might or might not equal to d: first
+    convert to (n,p,p) by applying 3 to X[i] and then apply 4.
 
     Parameters
     ----------
@@ -447,8 +447,8 @@ def cast_to_distmat(
 
     Returns
     -------
-    np.ndarray
-        Output p*p symmetric matrix.
+    (p,p) np.ndarray
+        Output p by p symmetric matrix.
     """
     if len(X.shape) == 1:
         N = int((1 + (1 + 8 * len(X)) ** 0.5) / 2)

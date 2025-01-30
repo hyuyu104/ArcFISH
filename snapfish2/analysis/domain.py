@@ -4,11 +4,13 @@ import logging
 import numpy as np
 import pandas as pd
 import dask.array as da
+import scipy
 from scipy import stats
 from scipy.signal import find_peaks
 from scipy.ndimage import gaussian_filter
 from statsmodels.stats import multitest as multi
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
 
 from .loop import AxisWiseF, DiffLoop
 from ..utils.load import ChromArray, to_very_wide
@@ -136,6 +138,7 @@ class TADCaller:
 
         # Jumps in d1d, no entries for inter region
         warnings.filterwarnings("ignore", ".*divide by zero")
+        warnings.filterwarnings("ignore", ".*invalid value encountered")
         rows = []
         for i in range(len(d1d)):
             if d1d[i] - d1d[0] < window/2 or d1d[-1] - d1d[i] < window/2:
@@ -385,12 +388,12 @@ class ABCaller:
         med_sq = da.nanmedian(da.square(carr.arr), axis=0).compute()
         # Already normalized. 
         # Hollowed or not does not matter. Same eigenspace.
-        Vs = np.linalg.eigh(np.exp(-med_sq))[1]
+        V = np.linalg.eigh(np.exp(-med_sq))[1][:,:,-2]
         wts = carr.axis_weights()
         cpmt_arr = KMeans(
             n_clusters=2, 
             random_state=0    
-        ).fit_predict((Vs[:,:,-2]*wts[:,None]).T)
+        ).fit_predict((V*wts[:,None]).T)
         
         cpmt_arr = ABCaller._filter_small_cmpt(
             cpmt_arr=cpmt_arr,
@@ -411,8 +414,8 @@ class ABCaller:
         return np.stack([
             carr.d1d, 
             cpmt_arr, 
-            *Vs[:,:,-2],
-            *(Vs[:,:,-2]*wts[:,None])
+            *V,
+            *(V*wts[:,None])
         ])
         
     def by_first_pc(self, cutoff:float, sigma:float=1) -> dict:
@@ -500,11 +503,8 @@ class ABCaller:
         lr = stats.linregress(log_d1d, np.log(contact_flat[kept]))
         
         contact_expected = np.exp(log_d1d*lr.slope + lr.intercept)
-        contact_flat_norm = np.where(
-            kept,
-            contact_flat[kept]/contact_expected,
-            0  # no pseudo count -> set to 0
-        )
+        contact_flat_norm = np.zeros_like(kept, dtype="float64")
+        contact_flat_norm[kept] = contact_flat[kept]/contact_expected
         contact_mat_norm = np.zeros_like(contact_mat, dtype="float64")
         contact_mat_norm[uidx] = contact_flat_norm
         # Fill both the upper and the lower triangle with normalized counts
@@ -522,9 +522,11 @@ class ABCaller:
         smooth_norm_mat = gaussian_filter(contact_mat_norm, sigma)
         contact_corr = np.corrcoef(smooth_norm_mat)
         
-        X = contact_corr - np.nanmean(contact_corr, axis=0)
-        U, S, Vh = np.linalg.svd(X)
-        cpmt_arr = ((np.sign(U[1]*S[1])+1)/2).astype("int")
+        # X = contact_corr - np.nanmean(contact_corr, axis=0)
+        # U, S, Vh = np.linalg.svd(X)
+        # cpmt_arr = ((np.sign(U[1]*S[1])+1)/2).astype("int")
+        pc1 = PCA(1).fit_transform(contact_corr).reshape(-1)
+        cpmt_arr = ((np.sign(pc1)+1)/2).astype("int")
         
         cpmt_arr = ABCaller._filter_small_cmpt(
             cpmt_arr=cpmt_arr,
@@ -599,10 +601,18 @@ class ABCaller:
                 .set_index("Chrom_Start")
             )["Chrom_End"][val[0]]
 
-            df = pd.DataFrame(val.T, columns=["s1", "cmpt"])
+            if val.shape[0] == 2:
+                cols = ["s1", "cpmt"]
+            if val.shape[0] == 8:
+                cols = [
+                    "s1", "cpmt", "eig_x", "eig_y", "eig_z",
+                    "wteig_x", "wteig_y", "wteig_z"
+                ]
+            df = pd.DataFrame(val.T, columns=cols)
+            df = df.astype({"s1":"int64", "cpmt":"int64"})
             df["e1"] = df["s1"].map(end_map)
             df["c1"] = chr_id
-            dfs.append(df[["c1", "s1", "e1", "cmpt"]])
+            dfs.append(df[["c1", "s1", "e1", "cpmt"] + cols[2:]])
         
         out_df = pd.concat(dfs, ignore_index=True)
         if out is None:
