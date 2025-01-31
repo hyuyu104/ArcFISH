@@ -2,19 +2,10 @@
 ```
 
 ```{toctree}
-:caption: Reproducing Figures
-:maxdepth: 1
+:maxdepth: 3
+:hidden:
 
-figures/0algorithm
-figures/1loop_benchmark
-figures/2tad_benchmark
-figures/3differential
-figures/4cpmt_benchmark
-```
-
-```{toctree}
-:caption: API Reference
-:maxdepth: 1
-
-apilist
+install
+figures/index
+api/index
 ```

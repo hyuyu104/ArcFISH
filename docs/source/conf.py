@@ -14,15 +14,15 @@ print(sys.path)
 project = 'SnapFISH2'
 copyright = '2024, Hongyu Yu'
 author = 'Hongyu Yu'
-release = '1.0.0'
+release = '2.0.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
     'sphinx.ext.intersphinx',
-    'sphinx_automodapi.automodapi',
-    'sphinx_automodapi.smart_resolver',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'nbsphinx',  # jupyter notebook
     'sphinx.ext.napoleon',  # numpy style
     'sphinx.ext.mathjax',  # math symbols
@@ -30,7 +30,9 @@ extensions = [
 ]
 numpydoc_show_class_members = False
 
-# templates_path = ['_templates']
+root_doc = 'index'
+
+templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 myst_enable_extensions = [
@@ -38,10 +40,25 @@ myst_enable_extensions = [
     "dollarmath",
 ]
 
-add_module_names = False
+# Generate the API documentation when building
+autosummary_generate = True
+numpydoc_show_class_members = False
+
+autodoc_member_order = 'bysource'
+
+napoleon_google_docstring = False
+napoleon_numpy_docstring = True
+
+# Don't add a source link in the sidebar
+html_show_sourcelink = False
+
+# Allow shorthand references for main function interface
+rst_prolog = """
+.. currentmodule:: snapfish2
+"""
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'sphinx_book_theme'
+html_theme = 'pydata_sphinx_theme'
 # html_static_path = ['_static']
