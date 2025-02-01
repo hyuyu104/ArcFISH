@@ -1,8 +1,8 @@
-Plotting module
-===============
+`snapfish2.pl`
+==============
 
 ```{eval-rst}
-.. currentmodule:: snapfish2.plot
+.. currentmodule:: snapfish2
 ```
 
 ```{eval-rst}
@@ -10,9 +10,9 @@ Plotting module
     :toctree: generated
     :nosignatures:
 
-    interactions.pairwise_heatmap
-    interactions.background_model
-    interactions.compare_loops
-    interactions.plot_TAD_boundary
-    interactions.plot_AB_bars
+    pl.pairwise_heatmap
+    pl.background_model
+    pl.compare_loops
+    pl.plot_TAD_boundary
+    pl.plot_AB_bars
 ```

@@ -1,15 +1,15 @@
 API Reference
 =============
 
-## Data loading and storage
+## Data loading and processing
 
 ```{toctree}
 :maxdepth: 3
 
-utils
+tools
 ```
 
-## Chromatin loops calling and differential analysis
+## Chromatin loops analysis
 
 ```{toctree}
 :maxdepth: 3
@@ -28,7 +28,7 @@ domain
 ## Plotting modules
 
 ```{toctree}
-:maxdepth: 3
+:maxdepth: 2
 
 plot
 ```

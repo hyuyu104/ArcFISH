@@ -1,8 +1,8 @@
-Chromatin Loops
-===============
+`snapfish2.loop`
+================
 
 ```{eval-rst}
-.. currentmodule:: snapfish2.analysis.loop
+.. currentmodule:: snapfish2
 ```
 
 ## General testing classes
@@ -12,9 +12,9 @@ Chromatin Loops
     :toctree: generated
     :nosignatures:
 
-    LoopTestAbstract
-    TwoSampleT
-    AxisWiseF
+    loop.LoopTestAbstract
+    loop.TwoSampleT
+    loop.AxisWiseF
 ```
 
 ## Loop caller class
@@ -24,7 +24,7 @@ Chromatin Loops
     :toctree: generated
     :nosignatures:
 
-    LoopCaller
+    loop.LoopCaller
 ```
 
 ## Differential loop
@@ -34,5 +34,5 @@ Chromatin Loops
     :toctree: generated
     :nosignatures:
 
-    DiffLoop
+    loop.DiffLoop
 ```

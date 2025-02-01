@@ -1,8 +1,8 @@
-TAD and A/B Compartments
-========================
+`snapfish2.domain`
+==================
 
 ```{eval-rst}
-.. currentmodule:: snapfish2.analysis.domain
+.. currentmodule:: snapfish2
 ```
 
 ## TAD caller
@@ -12,7 +12,7 @@ TAD and A/B Compartments
     :toctree: generated
     :nosignatures:
 
-    TADCaller
+    domain.TADCaller
 ```
 
 ## Differential TADs
@@ -22,7 +22,7 @@ TAD and A/B Compartments
     :toctree: generated
     :nosignatures:
 
-    DiffRegion
+    domain.DiffRegion
 ```
 
 ## A/B compartment caller
@@ -32,5 +32,5 @@ TAD and A/B Compartments
     :toctree: generated
     :nosignatures:
 
-    ABCaller
+    domain.ABCaller
 ```

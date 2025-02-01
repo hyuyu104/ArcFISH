@@ -1,5 +1,4 @@
 from matplotlib import pyplot as plt
-import matplotlib as mpl
 # import seaborn as sns
 
 from .interactions import *
