@@ -35,6 +35,8 @@ to-server:
 	scp -r figures \
 	snapfish2 \
 	Makefile \
+	docs \
+	README.md \
 	hongyuyu@longleaf.unc.edu:\
 	/proj/yunligrp/users/hongyuyu/AxisWiseTest/.
 

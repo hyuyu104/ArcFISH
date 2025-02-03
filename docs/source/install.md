@@ -1,43 +1,48 @@
-Installation
-============
+# Installation
 
-## Local installation on server
+## Create an environment and install SnapFISH2
 
-On the longleaf server, load python environment and install `snapfish2` locally:
+It is recommended to first create a new Python environment and then install `SnapFISH2`. This can be accomplished either by `conda` or Python's `venv`:
+::::{tabs}
+:::{group-tab} conda
 ```sh
-module load anaconda
-# /PYTHON/ENV/PATH is where the python environment will be created
-# Change this to your own directory to create your environment
-conda create --prefix /PYTHON/ENV/PATH python==3.12.2
-conda activate /PYTHON/ENV/PATH
-
-# cd to the directory with pyproject.toml file
-ls
-> ... pyproject.toml ...
-# Install snapfish2 locally
-python -m pip install -e .
+conda create --name snapfish2_env python==3.12.2
+conda activate snapfish2_env
+python -m pip install snapfish2
 ```
-After these steps, the package should be installed in the environment `/PYTHON/ENV/PATH`.
+:::
 
-## Data download
-
-If you plan to use the longleaf server to do analysis, all the data can be found at `/proj/yunligrp/users/hongyuyu/AxisWiseTest/data`. You can create a soft link as well so that the `data` folder is visible in your working directory: `ln -s /proj/yunligrp/users/hongyuyu/AxisWiseTest/data /proj/yunligrp/users/YOUR/WKDIR/`.
-
-If you plan to download all the data, the file `data/data.json` lists the ID for each data from ENCODE or 4DN data portal. To automatically download all data, first need to create a new access key for 4DN.
-
-> From [https://data.4dnucleome.org/help/user-guide/downloading-files](https://data.4dnucleome.org/help/user-guide/downloading-files): to create a new access key, first log in to the data portal, then click on your account in the upper right and click on Profile from the dropdown menu. There will be a button near the bottom of the page to add an access key. Save the key and secret; typically this is done by creating a file in your home directory called keypairs.json with the following contents/format (replacing the x’s with the appropriate key and secret, of course). Run `vim keypairs.json` in terminal to open the keypairs file. Enter
-```json
-{
-    "default": {
-        "key": "XXXXXXXX",
-        "secret": "XXXXXXXXXX",
-        "server": "https://data.4dnucleome.org"
-    }
-}
-```
-Then activate the python environment and download all data from ENCODE and 4DN (remember to submit a job if on the server, see `/proj/yunligrp/users/hongyuyu/AxisWiseTest/run.sh` for an example script):
+:::{group-tab} venv
 ```sh
-module load anaconda
-conda activate /PYTHON/ENV/PATH
-python /proj/yunligrp/users/hongyuyu/AxisWiseTest/figures/utils/data.py -d /WHERE/TO/PUT/DATA
+python -m venv snapfish2_env
+source .snapfish2_env/bin/activate
+python -m pip install snapfish2
 ```
+:::
+::::
+
+## Local installation for development
+
+To install the latest version on github and the dependencies to build the sphinx documentation:
+::::{tabs}
+:::{group-tab} conda
+```sh
+conda create --name snapfish2_env python==3.12.2
+conda activate snapfish2_env
+git clone https://github.com/hyuyu104/snapfish2
+cd snapfish2
+python -m pip install -e ".[docs]"
+```
+:::
+
+:::{group-tab} venv
+```sh
+python -m venv snapfish2_env
+source .snapfish2_env/bin/activate
+git clone https://github.com/hyuyu104/snapfish2
+cd snapfish2
+python -m pip install -e ".[docs]"
+```
+:::
+::::
+This will create an editable install, meaning that all modifications made on the source code will be reflected immediately without requiring re-installing the package. To compile the sphinx documentation, `cd docs` and then run `make clean && make html`.

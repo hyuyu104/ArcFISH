@@ -1,5 +1,6 @@
 import os
 import sys
+import snapfish2
 sys.path.insert(0, os.path.abspath("../.."))
 print(sys.path)
 
@@ -14,7 +15,7 @@ print(sys.path)
 project = "SnapFISH2"
 copyright = "2024, Hongyu Yu"
 author = "Hongyu Yu"
-release = "2.0.0"
+release = version = snapfish2.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -27,6 +28,9 @@ extensions = [
     "sphinx.ext.intersphinx",  # reference other libraries
     "sphinx.ext.napoleon",  # numpy style
     "sphinx.ext.mathjax",  # math symbols
+    "sphinx_design",  # grid card
+    "sphinx_tabs.tabs",  # tabs
+    "sphinx_copybutton"  # copy button for code chunks
 ]
 
 source_suffix = {
@@ -37,6 +41,7 @@ source_suffix = {
 myst_enable_extensions = [
     "amsmath",
     "dollarmath",
+    "colon_fence"  # sphinx_design
 ]
 
 # Generate the API documentation when building
@@ -54,6 +59,10 @@ napoleon_use_rtype = True
 napoleon_use_param = True
 napoleon_custom_sections = [("Params", "Parameters")]
 todo_include_todos = False
+
+# Lines starting with the pattern are treated as code
+copybutton_prompt_text = r">>> |\$ "
+copybutton_prompt_is_regexp = True
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
@@ -89,7 +98,12 @@ html_theme_options = {
     "github_url": "https://github.com/hyuhyu104/DNEYET",
     "header_links_before_dropdown": 6,
 
-    "navbar_center": ["version-switcher", "navbar-nav"],
+    "navbar_start": ["navbar-logo", "version-switcher"],
     "navbar_end": ["theme-switcher", "navbar-icon-links"],
     "navbar_align": "left",
+}
+
+html_sidebars = {
+    "install": [],
+    "workflow": [],
 }
