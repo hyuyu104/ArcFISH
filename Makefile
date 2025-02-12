@@ -33,6 +33,7 @@ log110124: data/chiapet_mesc/chiapet_all_replicates_all_targets_intersection.csv
 
 to-server:
 	scp -r figures \
+	tutorial \
 	snapfish2 \
 	Makefile \
 	docs \

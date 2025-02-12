@@ -5,8 +5,8 @@ from typing import Callable
 import numpy as np
 import pandas as pd
 import zarr
+import dask
 import dask.array as da
-import zarr.storage
 
 class MulFish:
     def __init__(self, input):
@@ -196,28 +196,44 @@ class ChromArray:
         
         n, p, d = self._X.shape
         # Size of n*d*c*c = 1GB
-        c = round(1*(n*d*8/1e9)**-.5)
+        c = round(1 * (n * d * 8 / 1e8) ** -0.5)
         self._root = zarr.create_array(
             store=store, dtype="float64",
             shape=(n,d,p,p), chunks=(n,d,c,c)
         )
         self._arr = da.from_zarr(self._root)
 
+        # ip1 = 0
+        # for i1 in self._arr.chunks[2]:
+        #     csl1 = slice(ip1, ip1+i1)
+        #     ip2 = 0
+        #     for i2 in self._arr.chunks[3]:
+        #         csl2 = slice(ip2, ip2+i2)
+        #         diff = self._X[:,None,csl1,:] - self._X[:,csl2,None,:]
+        #         self._root[:,:,csl1,csl2] = diff.transpose(0,3,2,1)
+        #         ip2 += i2
+        #     ip1 += i1
+        
+        tasks = []
         ip1 = 0
         for i1 in self._arr.chunks[2]:
             csl1 = slice(ip1, ip1+i1)
             ip2 = 0
             for i2 in self._arr.chunks[3]:
                 csl2 = slice(ip2, ip2+i2)
-                self._root[:,:,csl1,csl2] = np.stack([
-                    (x1.T[:,None,:] - x2.T[:,:,None]).transpose((0,2,1))
-                    for x1, x2 in zip(self._X[:,csl1,:], self._X[:,csl2,:])
-                ])
+                tasks.append(dask.delayed(self._assign(csl1, csl2)))
                 ip2 += i2
             ip1 += i1
+        dask.compute(*tasks)
             
         # Add an attribute to indicate the array is not normalized
         self._root.attrs.update({"normalized":False})
+        
+    def _assign(self, csl1, csl2):
+        import time
+        # time.sleep(1)
+        diff = self._X[:,None,csl1,:] - self._X[:,csl2,None,:]
+        self._root[:,:,csl1,csl2] = diff.transpose(0,3,2,1)
             
     def load_read(self, zarr_name:str):
         """Read from an existing zarr directory.
