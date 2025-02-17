@@ -61,17 +61,17 @@ napoleon_custom_sections = [("Params", "Parameters")]
 todo_include_todos = False
 
 # Lines starting with the pattern are treated as code
-copybutton_prompt_text = r">>> |\$ "
+copybutton_prompt_text = r">>> |\$ |... "
 copybutton_prompt_is_regexp = True
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
+    "pandas": ("https://pandas.pydata.org/docs/", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
     "sklearn": ("https://scikit-learn.org/stable/", None),
-    "scanpy": ("https://scanpy.readthedocs.io/en/stable/", None),
-    "snapatac2": ("https://kzhang.org/SnapATAC2", None),
-    "dask": ("https://docs.dask.org/en/stable/", None),
-    "zarr": ("https://zarr.readthedocs.io/en/stable/", None),
+    "anndata": ("https://anndata.readthedocs.io/en/stable/", None),
+    "dask": ("https://docs.dask.org/en/stable/", None)
 }
 
 smv_branch_whitelist = r"main"  # Include all branches

@@ -3,16 +3,13 @@ import logging
 
 from matplotlib import pyplot as plt
 
-from . import utils as tl
+from . import utils as pp
+from . import tools as tl
 from . import plot as pl
-
-from .analysis import loop
-from .analysis import domain
-from .analysis import simulate
 
 sys.modules.update({
     f"{__name__}.{m}": globals()[m]
-    for m in ["pl", "tl", "loop", "domain"]
+    for m in ["pp", "tl", "pl"]
 })
 
 __version__ = "2.0.0"

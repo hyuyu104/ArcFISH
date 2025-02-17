@@ -1,27 +1,14 @@
-import os
 from abc import ABC, abstractmethod
 import logging
 import warnings
 from typing import Tuple
-from itertools import combinations
 import numpy as np
 import pandas as pd
-import dask.array as da
+from anndata import AnnData, concat
 from scipy import stats
 from statsmodels.stats import multitest as multi
 
-from ..utils.load import ChromArray, to_very_wide
-from ..utils.func import sample_covar_ma
-
-
-# Define the display order
-__all__ = [
-    "LoopTestAbstract",
-    "TwoSampleT",
-    "AxisWiseF",
-    "LoopCaller",
-    "DiffLoop"
-]
+from ..utils.eval import axis_weight, joint_filter_normalize
 
 
 class LoopTestAbstract(ABC):
@@ -31,17 +18,12 @@ class LoopTestAbstract(ABC):
     
     Parameters
     ----------
-    carr : ChromArray
-        Data of a single chromosome, loaded already.
+    adata : AnnData
+        adata of a single chromosome, created by 
+        :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
     """
     @abstractmethod
-    def __init__(self, carr:ChromArray):
-        pass
-    
-    @abstractmethod
-    def preprocess(self):
-        """Preprocess the pairwise differences in each axis.
-        """
+    def __init__(self, adata:AnnData):
         pass
     
     @staticmethod
@@ -102,8 +84,12 @@ class LoopTestAbstract(ABC):
     
     @abstractmethod
     def append_summit(self, result:dict):
-        """Treat the entry with the smallest p-value in each cluster as
-        the summit. No additional filtering.
+        """How to define loop summit from each loop cluster.
+        
+        Loop candidates within the same cluster will have the same 
+        number in `result["label"]`. Add a boolean (p,p) matrix to
+        `result["summit"]`, where entries equal to `True` are the 
+        selected loop summit for each cluster.
 
         Parameters
         ----------
@@ -122,21 +108,15 @@ class TwoSampleT(LoopTestAbstract):
 
     Parameters
     ----------
-    carr : ChromArray
-        Data of a single chromosome, loaded already.
+    adata : AnnData
+        adata of a single chromosome, created by 
+        :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
     """
-    def __init__(self, carr:ChromArray):
-        if carr.normalized:
-            raise ValueError(
-                "Input pairwise difference array must be unnormalized."
-            )
-        self._d1d = carr.d1d
-        self._arr = carr.arr.compute()
-        
-    def preprocess(self):
-        """No additional preprocessing.
-        """
-        pass
+    def __init__(self, adata:AnnData):
+        self._d1d = adata.var["Chrom_Start"].values
+        X = np.stack([adata.layers[c] for c in ["X", "Y", "Z"]])
+        arr = X[:,:,:,None] - X[:,:,None,:]
+        self._pdists = np.sqrt(np.sum(np.square(arr), axis=0))
     
     @staticmethod
     def ij_background(
@@ -213,10 +193,10 @@ class TwoSampleT(LoopTestAbstract):
             if np.sum(kept) == 0:
                 continue
             
-            loop_dist = np.sqrt(np.sum(np.square(self._arr[:,:,i,j]), axis=1))
+            loop_dist = self._pdists[:,i,j]
             loop_dist = loop_dist[~np.isnan(loop_dist)]
             
-            bkgd_dist = np.sqrt(np.sum(np.square(self._arr[:,:,kept]), axis=1))
+            bkgd_dist = self._pdists[:,kept]
             bkgd_mean = np.nanmean(bkgd_dist, axis=1)
             bkgd_mean = bkgd_mean[~np.isnan(bkgd_mean)]
             stat, pval = stats.ttest_ind(
@@ -230,19 +210,22 @@ class TwoSampleT(LoopTestAbstract):
             
     def append_summit(self, result:dict):
         """Treat the entry with the smallest p-value in each cluster as
-        a potential summit. Filter summits by contact frequency. If the 
-        summit is a singleton (i.e. from only one candidate), then it is
-        marked as summit if contact frequency is larger than 1/2. If the
-        summit is not a singleton (i.e. from multiple candidates), then 
-        it is marked as summit if contact frequency is larger than 1/3.
+        a potential summit. Filter summits by contact frequency. 
+        
+        1. If the summit is a singleton (i.e. from only one candidate), 
+        then it is marked as summit if contact frequency is larger than 
+        1/2. 
+        
+        2. If the summit is not a singleton (i.e. from multiple 
+        candidates), then it is marked as summit if contact frequency is
+        larger than 1/3.
 
         Parameters
         ----------
         result : dict
             The result dictionary to add summit.
         """
-        arr, d1d = self._arr, self._d1d
-        dmaps = np.sqrt(np.sum(np.square(arr), axis=1))
+        d1d, dmaps = self._d1d, self._pdists
         freq_dists = dmaps[:,np.abs(d1d[:,None] - d1d[None,:])==25e3]
         warnings.filterwarnings("ignore", r".*invalid value")
         freq_mat = np.sum(dmaps<np.nanmean(freq_dists), axis=0)/\
@@ -267,22 +250,24 @@ class TwoSampleT(LoopTestAbstract):
 
             
 class AxisWiseF(LoopTestAbstract):
-    """Perform axis-wise F-test and combine p-values by Cauchy 
-    aggregation test. 
+    """Perform axis-wise F-test and combine p-values by aggregated 
+    Cauchy test. 
 
     Parameters
     ----------
-    carr : ChromArray
-        Data of a single chromosome, loaded already.
+    adata : AnnData
+        adata of a single chromosome, created by 
+        :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
     """
-    def __init__(self, carr:ChromArray):
-        self._carr = carr
+    def __init__(self, adata:AnnData):
+        self._d1d = adata.var["Chrom_Start"].values
+        val_cols = ["X", "Y", "Z"]
+        self._var = np.stack([adata.varp[f"var_{c}"] for c in val_cols])
+        self._count = np.stack([adata.varp[f"count_{c}"] for c in val_cols])
         
-    def preprocess(self):
-        """Remove outliers and normalize by 1D genomic distance by 
-        :func:`snapfish2.utils.load.ChromArray.normalize_inplace`.
-        """
-        self._carr.normalize_inplace()
+        if "weight" not in adata.uns:
+            axis_weight(adata)
+        self._wt = np.array([adata.uns["weight"][c] for c in val_cols])
         
     @staticmethod
     def ij_background(
@@ -334,8 +319,8 @@ class AxisWiseF(LoopTestAbstract):
         outer_cut:int,
     ):
         """Perform tests in each axis. In addition to `stat` and `pval`,
-        also append `axis_stat` and `axis_pval`, which are both (d,p,p)
-        matrices.
+        also append `axis_stat` and `axis_pval`, which are both (3,p,p)
+        arrays.
 
         Parameters
         ----------
@@ -349,30 +334,27 @@ class AxisWiseF(LoopTestAbstract):
             Loci with 1D genomic distance within `outer_cut` from the
             target locus is included in the local background.
         """
-        n, p, d = self._carr.X.shape
-        d1map = self._carr.d1d[None,:] - self._carr.d1d[:,None]
+        p = len(self._d1d)
+        d1map = self._d1d[None,:] - self._d1d[:,None]
 
-        entry_var = da.nanmean(da.square(self._carr.arr), axis=0).compute()
-        count = da.sum(~da.isnan(self._carr.arr), axis=0).compute()
-
-        result["axis_stat"] = np.zeros((d,p,p), dtype="float64")*np.nan
-        result["axis_pval"] = np.zeros((d,p,p), dtype="float64")*np.nan
+        result["axis_stat"] = np.zeros((3,p,p), dtype="float64")*np.nan
+        result["axis_pval"] = np.zeros((3,p,p), dtype="float64")*np.nan
 
         for i, j in zip(*np.where((d1map>=cut_lo)&(d1map<=cut_up))):
-            bkgd_map = self.ij_background(i, j, self._carr.d1d, outer_cut)
+            bkgd_map = self.ij_background(i, j, self._d1d, outer_cut)
             if np.sum(bkgd_map) == 0:
                 continue
             
-            num_unloop = np.sum(count[:,bkgd_map], axis=1)
-            wts = count[:,bkgd_map]/num_unloop[:,None]
-            denom = np.sum(wts*entry_var[:,bkgd_map], axis=1)
+            num_unloop = np.sum(self._count[:,bkgd_map], axis=1)
+            wts = self._count[:,bkgd_map]/num_unloop[:,None]
+            denom = np.sum(wts*self._var[:,bkgd_map], axis=1)
             
-            f_stats = entry_var[:,i,j]/denom
+            f_stats = self._var[:,i,j]/denom
             result["axis_stat"][:,i,j] = result["axis_stat"][:,j,i] = f_stats
-            f_pvals = stats.f.cdf(f_stats, count[:,i,j], num_unloop)
+            f_pvals = stats.f.cdf(f_stats, self._count[:,i,j], num_unloop)
             result["axis_pval"][:,i,j] = result["axis_pval"][:,j,i] = f_pvals
             
-        weights = self._carr.axis_weights()[:,None,None]
+        weights = self._wt[:,None,None]
         result["stat"] = np.sum(weights*np.tan(
             (0.5 - result["axis_pval"])*np.pi
         ), axis=0)
@@ -399,14 +381,10 @@ class AxisWiseF(LoopTestAbstract):
         
 
 class LoopCaller:
-    """Call chromatin loops from multiplexed imaging data.
+    """Class for chromatin loop calling.
 
     Parameters
     ----------
-    data : pd.DataFrame
-        Data in FOF-CT_core format with no repeating rows.
-    zarr_dire : str
-        Directory to store zarr file generated during calculation.
     fdr_cutoff: float
         FDR cut-off for chromatin loops, by default 0.1.
     cut_lo : float, optional
@@ -423,104 +401,66 @@ class LoopCaller:
     """
     def __init__(
         self,
-        data:pd.DataFrame,
-        zarr_dire:str,
         fdr_cutoff:float=0.1,
         cut_lo:float=1e5,
         cut_up:float=1e6,
         gap:float=50e3,
         outer_cut:float=50e3
     ):
-        self._data = data
-        if not os.path.exists(zarr_dire):
-            os.mkdir(zarr_dire)
-        self._zarr_dire = zarr_dire
-        
         self._fdr_cutoff = fdr_cutoff
         self._cut_lo = int(cut_lo)
         self._cut_up = int(cut_up)
         
         self._gap = int(gap)
         self._outer_cut = int(outer_cut)
-        
+
     @property
-    def zarr_dire(self):
-        """str : Directory to store zarr files."""
-        return self._zarr_dire
-        
-    @property
-    def fdr_cutoff(self):
+    def fdr_cutoff(self) -> float:
         """float : FDR cut-off for chromatin loops."""
         return self._fdr_cutoff
     
     @property
-    def loop_range(self):
+    def loop_range(self) -> Tuple[int, int]:
         """Tuple[int, int] : Loop size considered."""
         return (self._cut_lo, self._cut_up)
     
     @property
-    def gap(self):
+    def gap(self) -> int:
         """int : Loop candidates `gap` away from each other are 
         considered candidates for the same summit.
         """
         return self._gap
     
     @property
-    def outer_cut(self):
+    def outer_cut(self) -> int:
         """int : Loci with 1D genomic distance within `outer_cut` from 
         the target locus is included in the local background.
         """
         return self._outer_cut
-        
-    def loops_from_all_chr(
-        self, 
-        ltclass:LoopTestAbstract
-    ) -> pd.DataFrame:
-        """Identify chromatin loops from all chromosomes in the data.
-
-        Parameters
-        ----------
-        ltclass : LoopTestAbstract
-            Test method used.
-
-        Returns
-        -------
-        pd.DataFrame
-            Each row being an (i,j) pair, with the `summit` column
-            indicates whether this pair is a chromatin loop.
-        """
-        out = []
-        for chr_id in pd.unique(self._data["Chrom"]):
-            results = self.loops_from_single_chr(chr_id, ltclass)
-            out_c = self.to_bedpe(results, chr_id)
-            out.append(out_c)
-        if len(out) > 0:
-            return pd.concat(out).reset_index(drop=True)
     
-    def loops_from_single_chr(
+    def call_loops(
         self, 
-        chr_id:str, 
-        ltclass:LoopTestAbstract
+        adata:AnnData,
+        ltclass:LoopTestAbstract=AxisWiseF
     ) -> dict:
         """Call chromatin loops from a single chromosome.
 
         Parameters
         ----------
-        chr_id : str
-            The chromosome name.
+        adata : AnnData
+            adata of a single chromosome, created by 
+            :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
         ltclass : LoopTestAbstract
-            Test method used.
+            Test method used, by default :class:`AxisWiseF`.
 
         Returns
         -------
         dict
             A dictionary with keys stat, pval, fdr, candidate, label, 
-            summit. Values are (p,p) matrices.
+            summit. Values are (p,p) matrices. Might also contain other
+            values depending on the test class used.
         """
-        carr = ChromArray(self._data[self._data["Chrom"]==chr_id])
-        carr.load_write(os.path.join(self._zarr_dire, chr_id))
-        test_class = ltclass(carr)
-        test_class.preprocess()
+        test_class = ltclass(adata)
         
         result = {}
         test_class.append_pval(
@@ -543,10 +483,12 @@ class LoopCaller:
         result["fdr"] = pvals
         
         result["candidate"] = result["fdr"] < self._fdr_cutoff
-        result["label"] = self.spread_label(result["candidate"], carr.d1d)
+        result["label"] = self.spread_label(
+            result["candidate"], 
+            adata.var["Chrom_Start"].values
+        )
         
         test_class.append_summit(result)
-        carr.close()
             
         return result
     
@@ -592,9 +534,8 @@ class LoopCaller:
     def to_bedpe(
         self, 
         result:dict, 
-        chr_id:str, 
-        out:str=None
-    ) -> pd.DataFrame | None:
+        adata:AnnData
+    ) -> pd.DataFrame:
         """Convert loop calling result to a data frame with columns c1,
         s1, e1, c2, s2, e2, stat, pval, fdr, candidate, label, summit.
         c1, s1, e1 are the chromosome, starting position, and ending 
@@ -607,26 +548,20 @@ class LoopCaller:
         ----------
         result : dict
             Output from :func:`LoopCaller.loops_from_single_chr`.
-        chr_id : str
-            Chromosome name.
-        out : str, optional
-            Output file name. If None, will return the dataframe; save
-            the dataframe as a tab delimited file otherwise, by default
-            None.
-
+        adata : AnnData
+            adata of a single chromosome, created by 
+            :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+            
         Returns
         -------
-        pd.DataFrame | None
-            Combined dataframe. Return None if `out` is not None.
+        pd.DataFrame
+            Output dataframe in bedpe format.
         """
-        d1df = self._data[self._data["Chrom"]==chr_id][
-            ["Chrom_Start", "Chrom_End"]
-        ].drop_duplicates()
-        a = d1df["Chrom_Start"].values
+        a = adata.var["Chrom_Start"].values
         a1 = a[:,None] - np.zeros_like(a)
         a2 = a - np.zeros_like(a)[:,None]
 
-        b = d1df["Chrom_End"].values
+        b = adata.var["Chrom_End"].values
         b1 = b[:,None] - np.zeros_like(b)
         b2 = b - np.zeros_like(b)[:,None]
 
@@ -636,17 +571,13 @@ class LoopCaller:
             np.stack([a1, b1, a2, b2])[:,uidxs[0], uidxs[1]].T,
             columns=["s1", "e1", "s2", "e2"]
         )
-        out_df["c1"] = out_df["c2"] = chr_id
+        out_df["c1"] = out_df["c2"] = adata.uns["Chrom"]
         out_df = out_df[["c1", "s1", "e1", "c2", "s2", "e2"]]
 
         for k, v in result.items():
-            if v.shape == (len(d1df),len(d1df)):
+            if v.shape == (adata.n_vars, adata.n_vars):
                 out_df[k] = v[uidxs]
-        # out_df = out_df.dropna(subset="stat")
-        
-        if out is None:
-            return out_df
-        out_df.to_csv(out, sep="\t", index=False)
+        return out_df
 
 
 class DiffLoop:
@@ -654,33 +585,27 @@ class DiffLoop:
 
     Parameters
     ----------
-    data1 : pd.DataFrame
-        Condition 1 data in FOF-CT_core format with no repeating rows.
-    data2 : pd.DataFrame
-        Condition 2 data in FOF-CT_core format with no repeating rows.
-    zarr_dire : str
-        Directory to store zarr file generated during calculation.
+    adata1 : pd.DataFrame
+        Condition 1 data adata created by 
+        :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+    adata2 : pd.DataFrame
+        Condition 2 data adata created by 
+        :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
     """
     def __init__(
         self, 
-        data1:pd.DataFrame, 
-        data2:pd.DataFrame,
-        zarr_dire:str
+        adata1:AnnData, 
+        adata2:AnnData,
     ):
-        d1, d2 = data1.copy(), data2.copy()
-        d1["sf_grp"] = 1
-        d2["sf_grp"] = 2
-        self._data = pd.concat([d1, d2], ignore_index=True)
-        
-        if not os.path.exists(zarr_dire):
-            os.mkdir(zarr_dire)
-        self._zarr_dire = zarr_dire
+        if adata1.uns["Chrom"] != adata2.uns["Chrom"]:
+            raise ValueError("Chrom different for adata1 and adata2.")
+        self._adata1 = adata1
+        self._adata2 = adata2
     
     def diff_loops(
         self, 
         summit_df:pd.DataFrame,
-        s:float=5e3,
-        full_agg_pval=True
+        s:float=5e3
     ) -> dict:
         """Call differential chromatin interactions.
 
@@ -690,9 +615,6 @@ class DiffLoop:
             List of loops to check. Have columns c1, s1, e1, c2, s2, e2.
         s : float, optional
             Gaussian kernel size in bp, by default 5e3.
-        full_agg_pval : bool, optional
-            Whether to calculate the p-value for all entries, by default 
-            True. If False, will only calculate entries in `summit_df`.
 
         Returns
         -------
@@ -700,74 +622,59 @@ class DiffLoop:
             Differential loop testing result with keys f_pvals, 
             agg_pvals, and fdr. Values are (p,p) matrices.
         """
-        result_all = {}
-        for chr_id in pd.unique(self._data["Chrom"]):
-            results = {}
-            summit_chr = summit_df[
-                (summit_df["c1"]==chr_id)&(summit_df["c2"]==chr_id)
-            ]
-            chr_df = self._data[self._data["Chrom"]==chr_id]
-            carr = ChromArray(chr_df)
-            carr.load_write(os.path.join(self._zarr_dire, chr_id))
-            carr.normalize_inplace(nstds=4)
-            
-            results["f_pvals"] = self.entry_pvals(chr_df, carr)
-            
-            weights = carr.axis_weights()
-            
-            agg_p_mat, idx = self.loop_pvals(
-                weights, 
-                results["f_pvals"], 
-                carr.d1d, 
-                summit_chr, 
-                s=s, 
-                full_agg_pval=full_agg_pval
-            )
-            results["agg_pvals"] = agg_p_mat
-            
-            results["fdr"] = self.pval_to_fdr(agg_p_mat, idx)
-            result_all[chr_id] = results
-        return result_all
+        warnings.filterwarnings("ignore", r".+initializing view")
+        result = {}
+        chr_id = self._adata1.uns["Chrom"]
+        summit_chr = summit_df[
+            (summit_df["c1"]==chr_id)&(summit_df["c2"]==chr_id)
+        ]
+        joint_filter_normalize(self._adata1, self._adata2)
+        
+        result["f_pvals"] = self.entry_pvals(self._adata1, self._adata2)
+        adataj = concat([self._adata1, self._adata2])
+        weights = axis_weight(adataj, inplace=False)
+        
+        agg_p_mat, idx = self.loop_pvals(
+            weights, 
+            result["f_pvals"], 
+            self._adata1.var["Chrom_Start"].values, 
+            summit_chr, 
+            s=s
+        )
+        result["agg_pvals"] = agg_p_mat
+        
+        result["fdr"] = self.pval_to_fdr(agg_p_mat, idx)
+        return result
         
     @staticmethod
     def entry_pvals(
-        chr_df:pd.DataFrame, 
-        carr:ChromArray    
+        adata1:AnnData,
+        adata2:AnnData
     ) -> np.ndarray:
         """Calculate axis-wise entry-wise p-values by F-tests.
 
         Parameters
         ----------
-        chr_df : pd.DataFrame
-            Data of a single chromosome from both conditions in 
-            FOF-CT_core format.
-        carr : ChromArray
-            Data of a single chromosome, loaded and normalized.
+        adata1 : pd.DataFrame
+            Condition 1 data adata created by 
+            :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+        adata2 : pd.DataFrame
+            Condition 2 data adata created by 
+            :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
 
         Returns
         -------
-        (d, p, p) np.ndarray
+        (3, p, p) np.ndarray
             Axis-wise entry-wise p-values.
         """
-        if not carr.normalized:
-            raise ValueError("Array should be normalized.")
-        
-        grp1_tids = chr_df[chr_df["sf_grp"]==1].Trace_ID.unique()
-        grp2_tids = chr_df[chr_df["sf_grp"]==2].Trace_ID.unique()
-
-        arr1 = carr.arr[carr.trace_ids.isin(grp1_tids)]
-        arr2 = carr.arr[carr.trace_ids.isin(grp2_tids)]
-
-        warnings.filterwarnings("ignore", "Mean of empty slice")
-        var1 = da.nanmean(da.square(arr1), axis=0).compute()
-        count1 = da.sum(~da.isnan(arr1), axis=0).compute()
-        var2 = da.nanmean(da.square(arr2), axis=0).compute()
-        count2 = da.sum(~da.isnan(arr2), axis=0).compute()
-
-        warnings.filterwarnings("ignore", "divide by zero")
-        f_pvals = stats.f.cdf(var1/var2, count1, count2)
-        # Two-sided: either var1 > var2 or var1 < var2
-        f_pvals = 2*np.min(np.stack([f_pvals, 1 - f_pvals]), axis=0)
+        warnings.filterwarnings("ignore", ".*divide")
+        f_pvals = []
+        for c in ["X", "Y", "Z"]:
+            f_stats = adata1.varp[f"var_{c}"]/adata2.varp[f"var_{c}"]
+            count1 = adata1.varp[f"count_{c}"]
+            count2 = adata2.varp[f"count_{c}"]
+            f_pvals.append(stats.f.cdf(f_stats, count1, count2))
+        f_pvals = np.stack(f_pvals)
         return f_pvals
         
     @staticmethod
@@ -776,8 +683,7 @@ class DiffLoop:
         f_pvals:np.ndarray, 
         d1d:np.ndarray, 
         summit_chr:pd.DataFrame, 
-        s:float=5e3, 
-        full_agg_pval:bool=True
+        s:float=5e3
     ) -> Tuple[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """Calculate p-value for each loop considered. The p-value is 
         aggregated 1) from all axis by weights inversely proportional to 
@@ -796,9 +702,6 @@ class DiffLoop:
             List of loops within the chromosome to check.
         s : float, optional
             Gaussian kernel size in bp, by default 5e3
-        full_agg_pval : bool, optional
-            Whether to calculate the p-value for all entries, by default
-            True. If False, will only calculate entryes in `summit_chr`.
 
         Returns
         -------
@@ -809,10 +712,7 @@ class DiffLoop:
         d1d_sr = pd.Series(np.arange(len(d1d)), index=d1d)
         iidx = d1d_sr[summit_chr.s1].values
         jidx = d1d_sr[summit_chr.s2].values
-        if not full_agg_pval:
-            all_idx = zip(iidx, jidx)
-        else:
-            all_idx = combinations(range(d1d.shape[0]), 2)
+        all_idx = zip(iidx, jidx)
         
         act_stats = np.zeros_like(f_pvals, dtype="float64")*np.nan
         for i, j in all_idx:
@@ -865,48 +765,42 @@ class DiffLoop:
         
     def to_bedpe(
         self, 
-        result_all:dict, 
-        fdr_cutoff:float,
-        out:str | None=None
-    ) -> pd.DataFrame | None:
+        result:dict, 
+        fdr_cutoff:float=0.1
+    ) -> pd.DataFrame:
         """Convert differential loop result to dataframe, similar format
         as `summit_df`.
 
         Parameters
         ----------
-        result_all : dict
+        result : dict
             Dictionary returned by :func:`diff_loops`.
-        out : str | None, optional
-            Output file name. If None, will return the dataframe; save
-            the dataframe as a tab delimited file otherwise, by default
-            None.
-
+        fdr_cutoff : float, optional
+            Loops with p-values below this cutoff are defined as 
+            differential loop, by default 0.1.
+            
         Returns
         -------
-        pd.DataFrame | None
-            Output dataframe. Return None if `out` is not None.
+        pd.DataFrame
+            Output dataframe in bedpe format.
         """
-        bedpe_df = []
-        for k, v in result_all.items():
-            chr_df = self._data[self._data["Chrom"]==k]
-            d1 = chr_df[["Chrom_Start", "Chrom_End"]].drop_duplicates().values
-            s2, s1 = np.meshgrid(d1.T[0], d1.T[0])
-            e2, e1 = np.meshgrid(d1.T[1], d1.T[1])
+        d1 = self._adata1.var.values
+        s2, s1 = np.meshgrid(d1.T[0], d1.T[0])
+        e2, e1 = np.meshgrid(d1.T[1], d1.T[1])
 
-            result_arr = np.stack([s1, e1, s2, e2, v["agg_pvals"], v["fdr"]])
-            arr_triu = result_arr[:,*np.triu_indices_from(result_arr[0], 1)]
-            # Keep only rows with FDR not being NaN
-            # Changing full_agg_pval will change the number of rows kept
-            avail_idx = np.where(~np.isnan(arr_triu[-1]))
+        result_arr = np.stack(
+            [s1, e1, s2, e2, result["agg_pvals"], result["fdr"]]
+        )
+        arr_triu = result_arr[:,*np.triu_indices_from(result_arr[0], 1)]
+        # Keep only rows with FDR not being NaN
+        avail_idx = np.where(~np.isnan(arr_triu[-1]))
 
-            cols = ["s1", "e1", "s2", "e2", "pval", "fdr"]
-            df = pd.DataFrame(arr_triu[:,*avail_idx].T, columns=cols)
-            df = df.astype({c:"int" for c in cols[:4]})
-            df["c1"] = df["c2"] = k
-            
-            bedpe_df.append(df)
+        cols = ["s1", "e1", "s2", "e2", "pval", "fdr"]
+        bedpe_df = pd.DataFrame(arr_triu[:,*avail_idx].T, columns=cols)
+        bedpe_df = bedpe_df.astype({c:"int" for c in cols[:4]})
+        bedpe_df["c1"] = bedpe_df["c2"] = self._adata1.uns["Chrom"]
         
-        bedpe_df = pd.concat(bedpe_df)[
+        bedpe_df = bedpe_df[
             ["c1", "s1", "e1", "c2", "s2", "e2", "pval", "fdr"]
         ]
         bedpe_df["log_fdr"] = np.log(bedpe_df["fdr"])
@@ -917,6 +811,4 @@ class DiffLoop:
             + f"while {np.sum(~bedpe_df["diff"])} are not differential loops."
         )
         
-        if out is None:
-            return bedpe_df
-        bedpe_df.to_csv(out, sep="\t", index=False)
+        return bedpe_df

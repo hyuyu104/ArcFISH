@@ -10,6 +10,7 @@
     :toctree: generated
     :nosignatures:
 
+    pl.cast_to_distmat
     pl.pairwise_heatmap
     pl.background_model
     pl.compare_loops

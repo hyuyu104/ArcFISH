@@ -1,14 +1,11 @@
-from typing import Tuple
-import warnings
 import pandas as pd
 import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
-from matplotlib.lines import Line2D
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from ..utils import cast_to_distmat
-from ..analysis.loop import LoopTestAbstract
+from .utils import cast_to_distmat
+from ..tools.loop import LoopTestAbstract
 
 
 def pairwise_heatmap(

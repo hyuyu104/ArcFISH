@@ -3,8 +3,6 @@ import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-from ..utils.load import cast_to_distmat
-
 
 def trace(X, fig=None, label=False):
     if isinstance(X, pd.DataFrame):

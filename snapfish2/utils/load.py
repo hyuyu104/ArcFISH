@@ -1,24 +1,71 @@
-import os
-import shutil
 from typing import Tuple
 from typing import Callable
+from pathlib import Path
+import shutil
+import tempfile
+import csv
 import numpy as np
 import pandas as pd
-import zarr
-import dask
+from anndata import AnnData
 import dask.array as da
 
-class MulFish:
-    def __init__(self, input):
-        if isinstance(input, str):
-            self.read_info(input)
-            self.read_data(input)
-        if isinstance(input, pd.DataFrame):
-            self.data = input
-            
-    default_cols = ["Chrom", "Trace_ID"]
 
-    def read_info(self, path):
+class FOF_CT_Loader:
+    """Read in FOF_CT file(s).
+    
+    For FOF_CT-core files, call :func:`create_adata` to create an 
+    :class:`~anndata:anndata.AnnData`. The x, y, and z coordinates of
+    each chromatin trace are stored as layers. If multiple file paths
+    are passed in, merge traces from all the files.
+    
+    When having multiple files, will add a prefix to `Trace_ID` to make 
+    it unique. If `path` is a list, will add a single number prefix to 
+    `Trace_ID`. If `path` is a dictionary, prepend the dictionary key to
+    `Trace_ID`.
+    
+    For other FOF_CT files, call :func:`read_data` to read in the data
+    field as a dataframe.
+
+    Parameters
+    ----------
+    path : str | list | dict
+        The path of the FOF_CT file. Can be a list or a dictionary
+        specifying multiple files.
+
+    Raises
+    ------
+    ValueError
+        If `path` is not a string, a list, or a dictionary.
+    """
+    def __init__(self, path:str|list|dict):
+        if isinstance(path, str):
+            self._info = self._read_info(path)
+        elif isinstance(path, list):
+            self._info = [self._read_info(p) for p in path]
+        elif isinstance(path, dict):
+            self._info = {k:self._read_info(v) for k, v in path.items()}
+        else:
+            raise ValueError("path must be a string, a list, or a dictionary.")
+        
+        self._path = path
+        
+    @property
+    def info(self) -> str|list|dict:
+        """The information in the header of the FOF-CT files.
+
+        Returns
+        -------
+        list|dict
+            If `path` is a single file name, returns a dictionary of the 
+            header information. If `path` is a list, returns a list of 
+            informationdictionaries. If `path` is a dictionary, returns 
+            a dictionary of information dictionaries.
+        """
+        return self._info
+
+    @staticmethod
+    def _read_info(path):
+        """Read in the file header."""
         with open(path, "r") as f:
             info_lines, info_dict = [], {}
             while len(info_lines) == 0 or "#" in info_lines[-1]:
@@ -32,467 +79,280 @@ class MulFish:
                 else:
                     sep = line.find(": ")
                     info_dict[line[start+1:sep]] = line[sep+2:].strip(",")
-        self.info = info_dict
-
-    def read_data(self, path:str, **kwargs):
-        self.info["columns"] = self.info["columns"].strip("()").split(",")
-        self.info["columns"] = [t.strip() for t in self.info["columns"]]
-        data = pd.read_csv(
-            path, 
-            skiprows=len(self.info),
-            header=None,
-            names=self.info["columns"]
-        )
-
-        table_type = self.info["Table_namespace"]
-        if "FOF-CT_core" in table_type:
-            self.data = self._read_fof_ct_core(data, **kwargs)
-        else:
-            self.data = data
-
-    @staticmethod
-    def _fill_nan_cols(cols_fill, ref_col, df):
-        for col in cols_fill:
-            end_map = (
-                df[[ref_col, col]]
-                .dropna() # exclude NaN rows in the map
-                .drop_duplicates() # create unique map
-                .set_index(ref_col) # ref_col as the key
-            )
-            df[col] = df[ref_col].map(end_map[col])
-        return df
-
-    @staticmethod
-    def _read_fof_ct_core(
-        data:pd.DataFrame,
-        cols_w_bin_ref:list=["Chrom_End"],
-        cols_w_trace:list=["Cell_ID", "Chrom"]
-    ) -> pd.DataFrame:
-        types = data.dtypes
-        df_ls = []
-        for c, df in data.groupby("Chrom", sort=False):
-            ###################
-            df = df.drop_duplicates(["Chrom", "Trace_ID", "Chrom_Start"])
-            ###################
-
-            start_ls = np.unique(df["Chrom_Start"])
-            # insert NaN rows for unavailable observations
-            df = df.set_index("Chrom_Start").groupby(
-                "Trace_ID", 
-                sort=False
-            ).apply(
-                lambda x: x.reindex(start_ls),
-                include_groups=False
-            ).reset_index()
-
-            bin_ref_col = "Chrom_Start"
-
-            # Chrom_End and bin columns
-            bin_map = {v:i for i, v in enumerate(start_ls)}
-            # create indices for Chrom_Start
-            df["locus"] = df[bin_ref_col].map(bin_map)
-
-            df = MulFish._fill_nan_cols(cols_w_bin_ref, bin_ref_col, df)
-            trace_ref_col = "Trace_ID"
-            df = MulFish._fill_nan_cols(cols_w_trace, trace_ref_col, df)
-
-            df_ls.append(df)
         
-        data = (
-            pd.concat(df_ls)
-            .reset_index(drop=True)
-            .astype(types, errors="ignore")
-        )
-        data["Chrom"] = data["Chrom"].astype("str")
-        data["Trace_ID"] = data["Trace_ID"].astype("str")
-        return data
+        # Parse the column names as a list
+        cols = info_dict["columns"].strip("()").split(",")
+        info_dict["columns"] = [t.strip() for t in cols]
+        return info_dict
     
-    @staticmethod
-    def _get_helper_(col, k, df):
-        if isinstance(k, tuple) and len(k) == 1:
-            k = k[0]
-        if isinstance(k, str):
-            return df[df[col]==k]
-        elif isinstance(k, int):
-            chr_id = pd.unique(df[col])[k]
-            return df[df[col]==chr_id]
-        elif isinstance(k, slice):
-            chr_id = pd.unique(df[col])[k]
-            return df[df[col].isin(chr_id)]
-        else:
-            vals = pd.unique(df[col])
-            if isinstance(k[0], int):
-                return df[df[col].isin(vals[slice(*k)])]
-            elif isinstance(k[0], str):
-                l, u = np.where((vals==k[0])|(vals==k[1]))[0]
-                if len(k) == 3:
-                    s = slice(l, u, k[2])
-                    return df[df[col].isin(vals[s])]
-                return df[df[col].isin(vals[l:u])]
-    
-    def __getitem__(self, key):
-        if isinstance(key, tuple):
-            df = self.data
-            for i, k in enumerate(key):
-                if isinstance(k, tuple):
-                    df = self._get_helper_(
-                        col=k[0], k=k[1:], df=df
-                    )
-                elif k in df.columns:
-                    df = self._get_helper_(
-                        col=k, k=key[1:], df=df
-                    )
-                    break
-                else:
-                    df = self._get_helper_(
-                        col=self.default_cols[i],
-                        k=k, df=df
-                    )
-            return df
-        else:
-            return self._get_helper_(
-                col=self.default_cols[0],
-                k=key, df=self.data
-            )
-            
-            
-class ChromArray:
-    """Chunk-based storage of pairwise difference arrays. Call either
-    :func:`load_write` or :func:`load_read` to load the pairwise 
-    difference arrays.
-    
-    Parameters
-    ----------
-    chr_df: pd.DataFrame
-        Data of a single chromosome in FOF-CT_core format.
-    """
-    def __init__(self, chr_df:pd.DataFrame):        
-        val_cols = ["X", "Y", "Z"]
-        chr_df_pivoted = chr_df.pivot_table(
-            index="Chrom_Start", 
-            columns="Trace_ID", 
-            values=val_cols,
-            sort=False
-        )
-        self._trace_ids = chr_df_pivoted["X"].columns
-        self._X = np.stack([
-            chr_df_pivoted[v].values for v in val_cols
-        ]).transpose(2, 1, 0)
-        self._d1d = chr_df_pivoted.index.values
-    
-    def load_write(self, zarr_name:str):
-        """Calculate pairwise differences, store as zarr, and load the 
-        zarr file as a dask array.
-
-        Parameters
-        ----------
-        zarr_name : str
-            Directory to store zarr array.
-        """
-        if os.path.exists(zarr_name):
-            shutil.rmtree(zarr_name)
-        store = zarr.storage.LocalStore(root=zarr_name)
-        self._zarr_name = zarr_name
-        
-        n, p, d = self._X.shape
-        # Size of n*d*c*c = 1GB
-        c = round(1 * (n * d * 8 / 1e8) ** -0.5)
-        self._root = zarr.create_array(
-            store=store, dtype="float64",
-            shape=(n,d,p,p), chunks=(n,d,c,c)
-        )
-        self._arr = da.from_zarr(self._root)
-
-        # ip1 = 0
-        # for i1 in self._arr.chunks[2]:
-        #     csl1 = slice(ip1, ip1+i1)
-        #     ip2 = 0
-        #     for i2 in self._arr.chunks[3]:
-        #         csl2 = slice(ip2, ip2+i2)
-        #         diff = self._X[:,None,csl1,:] - self._X[:,csl2,None,:]
-        #         self._root[:,:,csl1,csl2] = diff.transpose(0,3,2,1)
-        #         ip2 += i2
-        #     ip1 += i1
-        
-        tasks = []
-        ip1 = 0
-        for i1 in self._arr.chunks[2]:
-            csl1 = slice(ip1, ip1+i1)
-            ip2 = 0
-            for i2 in self._arr.chunks[3]:
-                csl2 = slice(ip2, ip2+i2)
-                tasks.append(dask.delayed(self._assign(csl1, csl2)))
-                ip2 += i2
-            ip1 += i1
-        dask.compute(*tasks)
-            
-        # Add an attribute to indicate the array is not normalized
-        self._root.attrs.update({"normalized":False})
-        
-    def _assign(self, csl1, csl2):
-        import time
-        # time.sleep(1)
-        diff = self._X[:,None,csl1,:] - self._X[:,csl2,None,:]
-        self._root[:,:,csl1,csl2] = diff.transpose(0,3,2,1)
-            
-    def load_read(self, zarr_name:str):
-        """Read from an existing zarr directory.
-
-        Parameters
-        ----------
-        zarr_name : str
-            The name of the zarr directory.
-        """
-        store = zarr.storage.LocalStore(root=zarr_name)
-        self._root = zarr.open_array(store=store)
-        self._arr = da.from_zarr(self._root)
-        self._zarr_name = zarr_name
-        
-    @property
-    def X(self) -> np.ndarray:
-        """(n,p,d) np.ndarray: 3D coordinates of each trace."""
-        return self._X
-        
-    @property
-    def d1d(self) -> np.ndarray:
-        """(p,) np.ndarray: 1D genomic locations."""
-        return self._d1d
-    
-    @property
-    def root(self) -> zarr.Array:
-        """zarr.Array: Pairwise difference as a zarr array. This is
-        connect to the local storage.
-        """
-        return self._root
-    
-    @property
-    def arr(self) -> da.Array:
-        """da.Array: Pairwise difference as a dask array."""
-        return self._arr
-    
-    @property
-    def normalized(self) -> bool:
-        """bool: Whether the pairwise difference is normalized."""
-        return self._root.attrs["normalized"]
-    
-    @property
-    def trace_ids(self) -> pd.Index:
-        """np.ndarray : Trace IDs."""
-        return self._trace_ids
-    
-    def normalize_inplace(self, nstds:float=4):
-        """Stratify by 1D genomic distance and remove entries that are
-        `nstds` standard deviations away from the mean. Also remove 1D
-        genomic distance bias by dividing each stratum by its standard
-        deviation. The original array will be replaced by the normalized
-        one. Do nothing if the array is already normalized (i.e. 
-        :attr:`normalized` is True).
-        
-        Parameters
-        ----------
-        nstds : float, optional
-            Number of standard deviations to use as the cutoff. Remove 
-            values more than `nstds` standard deviations away from the
-            mean, by default 4. 
-        """
-        # Already normalized
-        if self.normalized:
-            return None
-        med_sq = da.nanmedian(da.square(self._arr), axis=0).compute()
-        d1map = self._d1d[None,:] - self._d1d[:,None]
-        
-        med_stds = np.zeros_like(med_sq, dtype="float64")
-        for dd in np.unique(d1map[d1map>0]):
-            idx = np.where(d1map==dd)
-            med_std = np.nanmedian(med_sq[:,*idx], axis=1)**.5
-            med_stds[:,*idx] = med_std[:,None]
-        # Fill the lower triangle
-        med_stds = med_stds + med_stds.transpose((0,2,1))
-        
-        # Remove outliers
-        ip1 = 0
-        for i1 in self._arr.chunks[2]:
-            csl1 = slice(ip1, ip1+i1)
-            ip2 = 0
-            for i2 in self._arr.chunks[3]:
-                csl2 = slice(ip2, ip2+i2)
-                self._root[:,:,csl1,csl2] = np.where(
-                    np.abs(self._root[:,:,csl1,csl2]) > \
-                        med_stds[:,csl1,csl2]*nstds,
-                    np.nan, self._root[:,:,csl1,csl2]
-                )
-                ip2 += i2
-            ip1 += i1
-            
-        count = da.sum(~da.isnan(self._arr), axis=0).compute()
-        count_by1d = np.zeros_like(count, dtype="int64")
-        for dd in np.unique(d1map[d1map>0]):
-            idx = np.where(d1map==dd)
-            count_by1d[:,*idx] = np.sum(count[:,*idx], axis=1)[:,None]
-        count_by1d = count_by1d + count_by1d.transpose((0,2,1))
-        count_by1d[:,*np.diag_indices(count_by1d.shape[2])] = 1
-        wt = count/count_by1d
-
-        wt_entry_mean = da.nanmean(self._arr, axis=0).compute()*wt
-        mean_by1d = np.zeros_like(wt_entry_mean, dtype="float64")
-        for dd in np.unique(d1map[d1map>0]):
-            idx = np.where(d1map==dd)
-            mean_by1d[:,*idx] = np.sum(wt_entry_mean[:,*idx], axis=1)[:,None]
-        mean_by1d = mean_by1d + mean_by1d.transpose((0,2,1))
-
-        wt_entry_var = da.nanmean(
-            (self._arr-mean_by1d)**2, axis=0
-        ).compute()*wt
-        std_by1d = np.zeros_like(wt_entry_var, dtype="float64")
-        for dd in np.unique(d1map[d1map>0]):
-            idx = np.where(d1map==dd)
-            std_by1d[:,*idx] = np.sqrt(
-                np.sum(wt_entry_var[:,*idx], axis=1)    
-            )[:,None]
-        std_by1d = std_by1d + std_by1d.transpose((0,2,1))
-        std_by1d[:,*np.diag_indices(std_by1d.shape[2])] = 1
-        
-        # Normalized to have standard deviation 1
-        ip1 = 0
-        for i1 in self._arr.chunks[2]:
-            csl1 = slice(ip1, ip1+i1)
-            ip2 = 0
-            for i2 in self._arr.chunks[3]:
-                csl2 = slice(ip2, ip2+i2)
-                self._root[:,:,csl1,csl2] = self._root[:,:,csl1,csl2]/\
-                    std_by1d[:,csl1,csl2]
-                ip2 += i2
-            ip1 += i1
-            
-        # Indicate that the array is normalized
-        self._root.attrs.update({"normalized":True})
-            
-    def axis_weights(self) -> np.ndarray:
-        """Calculate weight for each axis.
+    def read_data(self) -> pd.DataFrame|list|dict:
+        """Read the data field of the file(s).
 
         Returns
         -------
-        (d,) np.ndarray
-            Weight for each axis.
+        pd.DataFrame|list|dict
+            A single dataframe, a list of dataframes, or a dictionary of
+            dataframes, depending on the type of `path`.
         """
-        weights = []
-        for x in self._X.T:
-            x0 = x - np.nanmean(x, axis=0)
-            vars = np.nanmean(np.square(x0), axis=1)
-            weights.append(1/np.nanmedian(vars))
-        weights = np.array(weights)/np.sum(weights)
-        return weights
+        if isinstance(self._path, str):
+            return pd.read_csv(
+                self._path,
+                skiprows=len(self.info),
+                header=None,
+                names=self.info["columns"]
+            )
+        elif isinstance(self._path, list):
+            dfs = []
+            for i, p in enumerate(self._path):
+                df = pd.read_csv(
+                    p,
+                    skiprows=len(self.info[i]),
+                    header=None,
+                    names=self.info[i]["columns"]
+                )
+                dfs.append(df)
+            return dfs
+        elif isinstance(self._path, dict):
+            dfs = {}
+            for k, v in self._path.items():
+                dfs[k] = pd.read_csv(
+                    v,
+                    skiprows=len(self.info[k]),
+                    header=None,
+                    names=self.info[k]["columns"]
+                )
+            return dfs
     
-    def close(self):
-        """Remove the zarr directory created."""
-        if os.path.exists(self._zarr_name):
-            shutil.rmtree(self._zarr_name)
+    @staticmethod
+    def _fof_ct_core(path:str, info:dict, chr_id:str) -> pd.DataFrame:
+        """Read FOF_CT-core. Remove duplicates. Specify data types.
+        """
+        if "FOF-CT_core" not in info["Table_namespace"]:
+            raise ValueError("Not FOF-CT_core file.")
         
+        rows = []
+        chr_idx = info["columns"].index("Chrom")
+        with open(path, "r") as f:
+            reader = csv.reader(f)
+            for _ in range(len(info)):
+                next(reader)
+            for row in reader:
+                if str(row[chr_idx]) == chr_id:
+                    rows.append(row)
+        df = pd.DataFrame(rows, columns=info["columns"])
+        # csv reads NaN as ""
+        df = df.replace("", np.nan)
+        
+        # Drop rows with identical trace ID and locus ID
+        df = df.drop_duplicates(["Trace_ID", "Chrom_Start"])
+        
+        df = df.astype({
+            "Spot_ID": "str", "Chrom": "str", "Trace_ID": "str",
+            "X": "float64", "Y": "float64", "Z": "float64",
+            "Chrom_Start": "int64", "Chrom_End": "int64"
+        }, errors="ignore")
+        return df
+        
+    def create_adata(
+        self, 
+        chr_id:str,
+        voxel_ratio:dict|None=None,
+        var_cols_add:list|None=None,
+        obs_cols_add:list|None=None,
+        **kwargs
+    ) -> AnnData:
+        """Create an :class:`anndata:anndata.AnnData` object from a 
+        single or multiple FOF_CT-core files. The output is for a single
+        chromosome instead of all chromosomes imaged.
+
+        Parameters
+        ----------
+        chr_id : str
+            Chromosome ID used to filter `Chrom` column.
+        voxel_ratio : dict | None, optional
+            The conversion factor to convert voxel coordinate to actual
+            physical coordinate. No conversion if None, by default None.
+        var_cols_add : list | None, optional
+            Additional columns added to `var` field in the AnnData 
+            object, by default None.
+        obs_cols_add : list | None, optional
+            Additional columns added to `obs` field in the AnnData
+            object, by default None.
+        kwargs : dict
+            Additional keyword arguments passed to 
+            :class:`anndata:anndata.AnnData` constructor.
+
+        Returns
+        -------
+        AnnData
+            A n by p AnnData object, where n is the number of traces,
+            and p is the number of locus on the chromosome. `var` field
+            includes `Chrom_Start`, `Chrom_End`, and any additional
+            columns specified by `var_cols_add`. `obs` field includes
+            columns specified by `obs_cols_add`. The converted 3D
+            coordinates are stored in layers with names `X`, `Y`, and 
+            `Z`.
+        """
+        if isinstance(self._path, str):
+            data = self._fof_ct_core(self._path, self._info, chr_id)
+        elif isinstance(self._path, list):
+            data = []
+            for i, p in enumerate(self._path):
+                df = self._fof_ct_core(p, self._info[i], chr_id)
+                df["Trace_ID"] = f"{i}_" + df["Trace_ID"]
+                data.append(df)
+            data = pd.concat(data, ignore_index=True)
+        elif isinstance(self._path, dict):
+            data = []
+            for k, v in self._path.items():
+                df = self._fof_ct_core(v, self._info[k], chr_id)
+                df["Trace_ID"] = f"{k}_" + df["Trace_ID"]
+                data.append(df)
+            data = pd.concat(data, ignore_index=True)
+        
+        # Convert voxel coordinates to nm
+        if voxel_ratio is not None:
+            for k, v in voxel_ratio.items():
+                data[k] = data[k] * v
+                
+        var_cols = ["Chrom_Start", "Chrom_End"]
+        if var_cols_add is not None:
+            var_cols += var_cols_add
+        obs_cols = []
+        if obs_cols_add is not None:
+            obs_cols += obs_cols_add
+
+        locus_map = {
+            t:f"loc{i}" for i, t in 
+            enumerate(np.unique(data["Chrom_Start"]))
+        }
+        data["locus"] = data["Chrom_Start"].map(locus_map)
+
+        var_map = (
+            data[["locus"]+var_cols]
+            .drop_duplicates().set_index("locus")
+        )
+        obs_map = (
+            data[["Trace_ID"]+obs_cols]
+            .drop_duplicates().set_index("Trace_ID")
+        )
+        
+        val_cols = ["X", "Y", "Z"]
+        pivoted = data.pivot_table(
+            index="locus",
+            columns="Trace_ID",
+            values=val_cols,
+            sort=False
+        ).loc[locus_map.values()]  # sort by 1D location
+        adata = AnnData(
+            var=var_map.loc[pivoted.index],
+            obs=obs_map.loc[pivoted["X"].columns],
+            layers={v: pivoted[v].T for v in val_cols},
+            uns={"Chrom":chr_id},
+            **kwargs
+        )
+        return adata
     
+    
+def add_cell_type(
+    adata:AnnData, 
+    df:pd.DataFrame|list|dict,
+    shared_col:str,
+    cell_col:str
+):
+    """Add cell type information to `adata`.
+    
+    `adata` is created from a single or a list/dictionary of FOF_CT-core
+    files. Depending on how `adata` is created, `df` is a single 
+    dataframe or a list/dictionary which contains cell type information.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Object created by :func:`FOF_CT_Loader.create_adata`.
+    df : pd.DataFrame | list | dict
+        Object created by :func:`FOF_CT_Loader.read_data`.
+    shared_col : str
+        Column shared between `adata` and `df` used as an identifier.
+    cell_col : str
+        Column in `df` containing cell type information.
+        
+    Examples
+    --------
+    
+    1. `df` is a dataframe. `Cell_ID` is a common column in both the 
+    original FOF_CT-core file and the cell type information file. Map
+    `cluster label` from the cell type information file to `adata`.
+    
+    >>> loader = sf.pp.FOF_CT_Loader("PATH.csv")
+    >>> adata = loader.create_adata("chr3", obs_cols_add=["Cell_ID"])
+    >>> dfs = sf.pp.FOF_CT_Loader("TYPEPATH.csv").read_data()
+    >>> sf.pp.add_cell_type(adata, dfs, "Cell_ID", "cluster label")
+    
+    2. `df` is a list. `Cell_ID` is a common column in both the 
+    original FOF_CT-core file and the cell type information file. Map
+    `cluster label` from the cell type information file to `adata`.
+    
+    >>> loader = sf.pp.FOF_CT_Loader(["PATH1.csv", "PATH2.csv"])
+    >>> adata = loader.create_adata("chr3", obs_cols_add=["Cell_ID"])
+    >>> dfs = sf.pp.FOF_CT_Loader([
+    ...     "TYPEPATH1.csv", "TYPEPATH2.csv"
+    ... ]).read_data()
+    >>> sf.pp.add_cell_type(adata, dfs, "Cell_ID", "cluster label")
+    
+    3. `df` is a dictionary. `Cell_ID` is a common column in both the 
+    original FOF_CT-core file and the cell type information file. Map
+    `cluster label` from the cell type information file to `adata`.
+    
+    >>> loader = sf.pp.FOF_CT_Loader({
+    ...     "rep1":"PATH1.csv", "rep2":"PATH2.csv"
+    ... })
+    >>> adata = loader.create_adata("chr3", obs_cols_add=["Cell_ID"])
+    >>> dfs = sf.pp.FOF_CT_Loader({
+    ...     "rep1":"TYPEPATH1.csv", "rep2":"TYPEPATH2.csv"
+    ... }).read_data()
+    >>> sf.pp.add_cell_type(adata, dfs, "Cell_ID", "cluster label")
+    """
+    type_df = adata.obs[shared_col].to_frame().reset_index()
+    if isinstance(df, pd.DataFrame):
+        type_map = df.set_index(shared_col)[cell_col]
+        adata.obs[cell_col] = (
+            type_df[shared_col].map(type_map)
+            .values.astype(df[cell_col].dtype)
+        )
+    elif isinstance(df, list):
+        type_df["fidx"] = (
+            adata.obs[shared_col].index
+            .str.replace(r"^([^_]+)_.*$", r"\g<1>", regex=True)
+        )
+        for i, v in enumerate(df):
+            type_map = v.set_index(shared_col)[cell_col]
+            idx = type_df["fidx"]==f"{i}"
+            type_df.loc[idx,cell_col] = type_df[idx][shared_col].map(type_map)
+        adata.obs[cell_col] = (
+            type_df[cell_col].values
+            .astype(v[cell_col].dtype)
+        )
+    elif isinstance(df, dict):
+        type_df["fidx"] = (
+            adata.obs[shared_col].index
+            .str.replace(r"^([^_]+)_.*$", r"\g<1>", regex=True)
+        )
+        for k, v in df.items():
+            type_map = v.set_index(shared_col)[cell_col]
+            idx = type_df["fidx"]==k
+            type_df.loc[idx,cell_col] = type_df[idx][shared_col].map(type_map)
+        adata.obs[cell_col] = (
+            type_df[cell_col].values
+            .astype(v[cell_col].dtype)
+        )
+        
+
 def to_very_wide(
-    df:pd.DataFrame, 
-    func:Callable=lambda a,b: a-b
+    adata:AnnData
 ) -> Tuple[pd.DataFrame, np.ndarray]:
-    """Calculate pairwise differences. All calculations are in memory.
-    Use :class:`ChromArray` instead for large datasets (`p` or `n` is 
-    large).
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Data of a single chromosome in FOF_CT-core format.
-    func : Callable, optional
-        What pairwise function is used, by default lambda a,b: a-b,
-        which calculates the pairwise differences.
-
-    Returns
-    -------
-    Tuple[pd.DataFrame, np.ndarray]
-        A pivoted dataframe of 3D locations of imaged loci, rows being 
-        genomic locus and columns being trace IDs. An array of shape
-        (n,d,p,p) for pairwise differences.
-    """
-    val_cols = ["X", "Y", "Z"]
-    chr_df_pivoted = df.pivot_table(
-        index="Chrom_Start", 
-        columns="Trace_ID", 
-        values=val_cols,
-        sort=False
-    )
-    
-    # Shape: n x p x d
-    X = np.stack([
-        chr_df_pivoted[v].values for v in val_cols
-    ]).transpose(2, 1, 0)
-    arrs = []
-    for x in X:
-        d = func(x.T[:,None,:], x.T[:,:,None])
-        arrs.append(d.transpose(0, 2, 1))
-    # Shape: n x d x p x p
-    arrs = np.stack(arrs)
-    return chr_df_pivoted, arrs
+    pass
 
 
-def cast_to_distmat(
-    X:np.ndarray, func:Callable=np.nanmean
-) -> np.ndarray:
-    """Cast the input array to a p by p matrix. Specfically,
-    
-    1. X is a 1d array: treat X as the flattened upper triangle of a
-    (p,p) matrix and refill it into a p*p matrix.
-    
-    2. X is a (p,p) symmetric matrix: return X.
-    
-    3. X is a (p,d) asymmetric matrix, where p might or might not equal 
-    to d: treat as the coordinates of a single trace, calculate the 
-    pairwise distance matrix.
-    
-    4. X is a (n,p,p) matrix, where X[i] is symmetric: apply func to each
-    entry (e.g. func = np.nanmean, then this is averaging each entry).
-    
-    5. X is a (n,p,d) matrix, where p might or might not equal to d: first
-    convert to (n,p,p) by applying 3 to X[i] and then apply 4.
-
-    Parameters
-    ----------
-    X : np.ndarray
-        Input matrix.
-    func : Callable, optional
-        How to calculate average when the dimension of the input is at 
-        least 3, by default np.nanmean.
-
-    Returns
-    -------
-    (p,p) np.ndarray
-        Output p by p symmetric matrix.
-    """
-    if len(X.shape) == 1:
-        N = int((1 + (1 + 8 * len(X)) ** 0.5) / 2)
-        mat = np.zeros((N, N))*np.nan
-        mat[np.triu_indices(N, 1)] = X
-        mat.T[np.triu_indices(N, 1)] = mat[np.triu_indices(N, 1)]
-    elif len(X.shape) == 2 and X.shape[0] == X.shape[1] and \
-        np.allclose(X[~np.isnan(X)], X.T[~np.isnan(X)]):
-            mat = X
-    elif len(X.shape) == 2:
-        # p x d
-        outer_diff = np.stack([
-            x[:,None] - x[None,:] for x in X.T
-        ])
-        mat = np.sqrt(np.sum(np.square(outer_diff), axis=0))
-    elif X.shape[1] == X.shape[2] and \
-        np.allclose(X[~np.isnan(X)], X.transpose(0,2,1)[~np.isnan(X)]):
-            # print("very same")
-            mat = func(X, axis=0)
-    else:
-        arrs = []
-        for x in X:
-            outer_diff = np.stack([
-                a[:,None] - a[None,:] for a in x.T
-            ])
-            d = np.sqrt(np.sum(np.square(outer_diff), axis=0))
-            arrs.append(d)
-        arrs = np.stack(arrs)
-        mat = func(arrs, axis=0)
-    return mat
-            
+class ChromArray:
+    pass
