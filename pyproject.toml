@@ -49,6 +49,9 @@ docs = [
 Source = "https://github.com/hyuyu104/DNEYET"
 Docs = "https://github.com/hyuyu104/DNEYET"
 
+[project.scripts]
+snapfish2 = "snapfish2.wrapper.cmdline:main"
+
 [tool.setuptools]
 packages = ["snapfish2"]
 py-modules = ["__init__"]

@@ -1,5 +1,10 @@
 from typing import Callable
+import pandas as pd
 import numpy as np
+from scipy.interpolate import LinearNDInterpolator
+
+from ..utils.load import FOF_CT_Loader
+from ..utils.eval import median_pdist
 
 def cast_to_distmat(
     X:np.ndarray, func:Callable=np.nanmean
@@ -64,3 +69,28 @@ def cast_to_distmat(
         mat = func(arrs, axis=0)
     return mat
             
+            
+def rotate_df(df:pd.DataFrame, theta:float=-45) -> pd.DataFrame:
+    """Rotate the 2D coordinates of a DataFrame by `theta` degrees. The
+    input data frame must have columns "x" and "y".
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Dataframe with 2D coordinates and values.
+    theta : float, optional
+        Rotation angle in degree, by default 45.
+
+    Returns
+    -------
+    pd.DataFrame
+        Rotated dataframe with new columns "x_rot" and "y_rot".
+    """
+    rotation = np.array([
+        [np.cos(theta/180*np.pi), -np.sin(theta/180*np.pi)],
+         [np.sin(theta/180*np.pi), np.cos(theta/180*np.pi)]
+    ])
+    vals = rotation@df[["x", "y"]].values.T
+    df["x_rot"] = vals[0]
+    df["y_rot"] = vals[1]
+    return df

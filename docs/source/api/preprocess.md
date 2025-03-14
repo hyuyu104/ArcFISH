@@ -26,4 +26,5 @@
     pp.filter_normalize
     pp.joint_filter_normalize
     pp.median_pdist
+    pp.pseudo_count
 ```

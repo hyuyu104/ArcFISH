@@ -30,14 +30,40 @@ class TADCaller:
     window : float, optional
         Domain size in bp to calculate intra- and inter-domain distance,
         by default 1e5.
+    tree : bool, optional
+        Whether to return hierarchical TADs, by default True.
+    min_tad_size : float, optional
+        The minimum TAD size allowed, by default 0.
+    prominence : float, optional
+        Required only if method is "insulation", by default None.
+        Least height difference in normalized insulation score in order 
+        for the locus to be defined as a peak. Passed to
+        :func:`~scipy.signal.find_peaks`.
+    distance : float, optional
+        Required only if method is "insulation", by default None.
+        Least number of loci between two peaks. Passed to
+        :func:`~scipy.signal.find_peaks`.
+    method :  Literal["pval", "insulation"], optional
+        TAD calling algorithm used, by default "pval".
     """
     def __init__(
         self,
         fdr_cutoff:float=0.1,
         window:float=1e5,
+        tree:bool=True,
+        min_tad_size:float=0,
+        prominence:float|None=None,
+        distance:int|None=None,
+        method:Literal["pval", "insulation"]="pval"
     ):
         self._fdr_cutoff = fdr_cutoff
         self._window = int(window)
+        self._tree = tree
+        self._min_tad_size = int(min_tad_size)
+        self._method = method
+        
+        self._prominence = prominence
+        self._distance = distance
         
     @property
     def fdr_cutoff(self) -> float:
@@ -50,6 +76,51 @@ class TADCaller:
         contacts.
         """
         return self._window
+    
+    @property
+    def tree(self) -> bool:
+        """bool : Call hierarchical TADs."""
+        return self._tree
+    
+    @property
+    def min_tad_size(self) -> int:
+        """int : Minimum TAD size."""
+        return self._min_tad_size
+    
+    @property
+    def prominence(self) -> float:
+        """float : Prominence of peaks."""
+        return self._prominence
+    
+    @property
+    def distance(self) -> int:
+        """int : Minimum distance between peaks."""
+        return
+    
+    @property
+    def method(self) -> Literal["pval", "insulation"]:
+        """str : TAD calling method used."""
+        return self._method
+    
+    def call_tads(self, adata:AnnData) -> pd.DataFrame:
+        """Call TADs from `adata`.
+
+        Parameters
+        ----------
+        adata : AnnData
+            adata of a single chromosome, created by 
+            :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+
+        Returns
+        -------
+        pd.DataFrame
+            A dataframe with length equal to the number of loci. The 
+            column `peak` defines whether the position is a boundary.
+        """
+        if self._method == "pval":
+            return self.by_pval(adata)
+        if self._method == "insulation":
+            return self.by_insulation(adata)
         
     def by_pval(
         self,
@@ -136,9 +207,7 @@ class TADCaller:
         
     def by_insulation(
         self,
-        adata:AnnData,
-        prominence:float,
-        distance:int
+        adata:AnnData
     ) -> pd.DataFrame:
         """Call TADs by insulation score. Method from
         Su, J.-H., Zheng, P., Kinrot, S. S., Bintu, B. & Zhuang, X. 
@@ -150,13 +219,6 @@ class TADCaller:
         adata : AnnData
             adata of a single chromosome, created by 
             :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
-        prominence : float
-            Least height difference in normalized insulation score in 
-            order for the locus to be defined as a peak. Passed to 
-            scipy's `find_peaks` function.
-        distance : int
-            Least number of loci between two peaks. Passed to scipy's
-            `find_peaks` function.
 
         Returns
         -------
@@ -201,8 +263,8 @@ class TADCaller:
         scores = np.array(scores)
         peak_idx = find_peaks(
             scores, 
-            prominence=prominence, 
-            distance=distance
+            prominence=self._prominence, 
+            distance=self._distance
         )[0]
         peaks = np.zeros_like(scores, dtype="bool")
         peaks[peak_idx] = True
@@ -215,12 +277,9 @@ class TADCaller:
         cols = ["c1"] + result.columns.drop("c1").to_list()
         return result[cols]
     
-    @staticmethod
     def to_bedpe(
-        result:pd.DataFrame, 
-        score_col:Literal["stat", "insulation"]="stat",
-        tree:bool=True,
-        min_tad_size:float=0
+        self,
+        result:pd.DataFrame
     ) -> pd.DataFrame | None:
         """Convert TAD calling result to a dataframe where each row is a
         TAD (a pair of boundaries instead of a single boundary).
@@ -230,13 +289,6 @@ class TADCaller:
         result : pd.DataFrame
             Result returned by :func:`by_insulation` or 
             :func:`by_pval`.
-        score_col : str
-            "insulation" for result form :func:`by_insulation` and 
-            "stat" for result from :func:`by_pval`.
-        tree : bool, optional
-            Whether to return hierarchical TADs, by default True.
-        min_tad_size : float, optional
-            The minimum TAD size allowed, by default 0.
 
         Returns
         -------
@@ -250,6 +302,9 @@ class TADCaller:
         rows = []
         val = result.reset_index(drop=True)
         chr_id = val.c1.iloc[0]
+        
+        # Use "stat" if called by_pval, otherwise "insulation"
+        score_col = "stat" if "stat" in val.columns else "insulation"
         
         # Set the first and the last loci as peaks
         val.loc[val.index[0], "peak"] = True
@@ -267,7 +322,7 @@ class TADCaller:
             ])
             prev, ip = row, i
         
-        if tree:
+        if self._tree:
             df = sub_df.copy()
             idxs = df[1:-1].sort_values(score_col).index
             for i in idxs:
@@ -288,7 +343,7 @@ class TADCaller:
             "level", "idx1", "idx2"
         ]
         out_df = pd.DataFrame(rows, columns=cols)
-        out_df = out_df[(out_df["s2"] - out_df["s1"])>min_tad_size]
+        out_df = out_df[(out_df["s2"] - out_df["s1"])>self._min_tad_size]
         return out_df
         
         
@@ -299,12 +354,47 @@ class ABCaller:
     ----------
     min_comp_size : float
         Minimum compartment size in bp.
+    cutoff: float, optional
+        Required only if method is "pca".
+        Distance below `cutoff` is defined as contact, by dafault None.
+    sigma : float, optional
+        Required only if method is "pca".
+        Gaussian kernel size, by default 1.
+    method : Literal["axes", "pca"], optional
+        A/B compartment calling algorithm used, by default "axes".
     """
     def __init__(
         self, 
         min_cpmt_size:float,
+         cutoff:float|None=None,
+         sigma:float|None=1,
+         method:Literal["axes", "pca"]="axes"
     ):
         self._min_cpmt_size = min_cpmt_size
+        self._cutoff = cutoff
+        self._sigma = sigma
+        self._method = method
+        
+    def call_cpmt(self, adata:AnnData) -> pd.DataFrame:
+        """Call A/B compartments from `adata`.
+
+        Parameters
+        ----------
+        adata : AnnData
+            adata of a single chromosome, created by 
+            :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+
+        Returns
+        -------
+        pd.DataFrame
+            A dataframe with length equal to the number of locus. The 
+            column `cpmt` indicates A/B compartment assignments: 0
+            indicates A compartment and 1 indicates B compartment.
+        """
+        if self._method == "axes":
+            return self.by_axes_pc(adata)
+        if self._method == "pca":
+            return self.by_first_pc(adata)
         
     def by_axes_pc(self, adata:AnnData) -> pd.DataFrame:
         """Call A/B compartments by weighting the 2nd PC from different
@@ -366,7 +456,7 @@ class ABCaller:
         })
         return result
         
-    def by_first_pc(self, adata:AnnData, cutoff:float, sigma:float=1) -> dict:
+    def by_first_pc(self, adata:AnnData) -> dict:
         """Call A/B compartments by first PCA. Adopted from
         Su, J.-H., Zheng, P., Kinrot, S. S., Bintu, B. & Zhuang, X. 
         Genome-Scale Imaging of the 3D Organization and Transcriptional 
@@ -377,10 +467,6 @@ class ABCaller:
         adata : AnnData
             adata of a single chromosome, created by 
             :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
-        cutoff: float
-            Distance below `cutoff` is defined as contact.
-        sigma : float, optional
-            Gaussian kernel size, by default 1.
 
         Returns
         -------
@@ -404,7 +490,7 @@ class ABCaller:
         # (n, p, p) pairwise distance matrices for each trace
         dist_mats = da.sqrt(da.sum(da.square(arr), axis=1))
         # (p, p) pseudo contact map
-        contact_mat = da.sum(dist_mats < cutoff, axis=0)\
+        contact_mat = da.sum(dist_mats < self._cutoff, axis=0)\
             /da.sum(~da.isnan(dist_mats), axis=0)
         contact_mat = contact_mat.compute()
             
@@ -433,7 +519,7 @@ class ABCaller:
         # cov_mat = mat_m.T@mat_m
         # var_arr = np.diag(cov_mat)[:,None]
         # contact_corr = cov_mat/np.sqrt(var_arr*var_arr.T)
-        smooth_norm_mat = gaussian_filter(contact_mat_norm, sigma)
+        smooth_norm_mat = gaussian_filter(contact_mat_norm, self._sigma)
         contact_corr = np.corrcoef(smooth_norm_mat)
         
         # X = contact_corr - np.nanmean(contact_corr, axis=0)

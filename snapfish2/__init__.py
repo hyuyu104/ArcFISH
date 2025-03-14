@@ -1,15 +1,17 @@
 import sys
 import logging
+from typing import Literal
 
 from matplotlib import pyplot as plt
 
 from . import utils as pp
 from . import tools as tl
+from . import wrapper as wr
 from . import plot as pl
 
 sys.modules.update({
     f"{__name__}.{m}": globals()[m]
-    for m in ["pp", "tl", "pl"]
+    for m in ["pp", "tl", "wr", "pl"]
 })
 
 __version__ = "2.0.0"
@@ -20,7 +22,8 @@ class _settings:
     def __init__(self):
         self.verbosity = 20
         
-        self.font_weight = "bold"
+        self.font_weight = "normal"
+        # self.font_family = "Hiragino Maru Gothic Pro"
         self.font_family = "Arial"
         self.fontsize = 10
         self.plot_style = "seaborn-v0_8-paper"
@@ -32,7 +35,9 @@ class _settings:
             "axes.spines.right": False,
             "axes.spines.top": False,
             # remove the border of legend
-            "legend.loc": (1, 0.5)
+            "legend.loc": (1, 0.5),
+            "axes.grid": True,
+            "grid.color": ".8"
         })
         
     @property
@@ -86,8 +91,8 @@ class _settings:
         plt.rcParams["axes.titlesize"] = ftsize
         plt.rcParams["axes.labelsize"] = ftsize
         
-        plt.rcParams["xtick.labelsize"] = ftsize*.8
-        plt.rcParams["ytick.labelsize"] = ftsize*.8
+        plt.rcParams["xtick.labelsize"] = ftsize
+        plt.rcParams["ytick.labelsize"] = ftsize
         
         self._fontsize = ftsize
         

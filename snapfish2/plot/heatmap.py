@@ -1,17 +1,20 @@
+from typing import Tuple
 import pandas as pd
 import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
+import matplotlib.cm as cm
+import matplotlib.colors as mcolors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from .utils import cast_to_distmat
+from .utils import cast_to_distmat, rotate_df
 from ..tools.loop import LoopTestAbstract
 
 
 def pairwise_heatmap(
     X1:np.ndarray,
     X2:np.ndarray=None,
-    ax:plt.axis=None,
+    ax:plt.Axes=None,
     x:str=None, 
     y:str=None, 
     title:str=None, 
@@ -25,11 +28,11 @@ def pairwise_heatmap(
     ----------
     X1 : np.ndarray
         First heatmap data, passed to 
-        :func:`snapfish2.utils.load.cast_to_distmat`.
+        :func:`snapfish2.pl.cast_to_distmat`.
     X2 : np.ndarray, optional
         Second data, passed to 
-        :func:`snapfish2.utils.load.cast_to_distmat`, by default None.
-    ax : plt.axis, optional
+        :func:`snapfish2.pl.cast_to_distmat`, by default None.
+    ax : plt.Axes, optional
         Axis to plot the heatmap, by default None.
     x : str, optional
         Label for the first heatmap, by default None.
@@ -65,8 +68,8 @@ def background_model(
     TestClass:LoopTestAbstract,
     bin:int|np.ndarray, 
     num_bins:int=50,
-    ax:plt.axis=None
-) -> plt.axis:
+    ax:plt.Axes=None
+) -> plt.Axes:
     """Cartoon visualization of background model.
 
     Parameters
@@ -83,13 +86,13 @@ def background_model(
     num_bins : int, optional
         Required if bin is an integer. Number of loci to plot, by 
         default 50.
-    ax : plt.axis, optional
-        plt.axis object, by default None.
+    ax : plt.Axes, optional
+        plt.Axes object, by default None.
 
     Returns
     -------
-    plt.axis
-        plt.axis object.
+    plt.Axes
+        plt.Axes object.
     """
     if isinstance(bin, np.ndarray):
         d1d = bin
@@ -108,12 +111,121 @@ def background_model(
     return ax
 
 
+def triangle_heatmap(
+    mat:np.ndarray, 
+    df1d:pd.DataFrame, 
+    cut_hi:None|float=None,
+    cmap:str|mcolors.Colormap="RdBu",
+    fig:None|plt.Figure=None,
+    width:float=3,
+    height:None|float=None,
+    alpha:float=0.8,
+    xticklabels:None|list[str]=None
+) -> Tuple[plt.Figure, plt.Axes, plt.Axes]:
+    """Plot a heatmap in the upper right triangle of a 2D matrix.
+    
+    `fig`, `width`, `height`:
+    
+    1. If `fig` is not None, no need to pass in `width` and `height`.
+    
+    2. If `width` is not None, no need to pass in `fig`. In this case, 
+    if `height` is None, infer `height` from `width` and `cut_hi`. If
+    `height` is not None, use `height` as the height of the figure.
+
+    Parameters
+    ----------
+    mat : np.ndarray
+        p by p matrix to plot.
+    df1d : pd.DataFrame
+        1D genomic location information. Must contain "Chrom_Start" and
+        "Chrom_End" as columns. Can first call 
+        :func:`snapfish2.pp.FOF_CT_Loader.create_adata` to 
+        create an adata object and then use the `var` field as `df1d`.
+    cut_hi : None | float, optional
+        Only pixels with 1D genomic distance below `cut_hi` will be 
+        plotted. Plot all pixels if `cut_hi` is None, by default None.
+    cmap : str | mcolors.Colormap, optional
+        Color map used, can be either a string or a Colormap object
+        created by :func:`~matplotlib:matplotlib.pyplot.get_cmap`, by 
+        default "RdBu".
+    fig : None | plt.Figure, optional
+        Figure object to plot the heatmap, by default None.
+    width : float, optional
+        Width of the figure, by default 3.
+    height : None | float, optional
+        Height of the figure, by default None.
+    alpha : float, optional
+        Transparency of pixels, by default 0.8.
+    xticklabels : None | list[str], optional
+        List of length 2, xtick labels. If None, set the xtick labels
+        as 1D genomic locations with unit Mb, by default None.
+
+    Returns
+    -------
+    Tuple[plt.Figure, plt.Axes, plt.Axes]
+        Figure, main ax, and colorbar ax.
+    """
+    d1d = ((df1d["Chrom_End"] + df1d["Chrom_Start"])/2).values
+    x, y = np.meshgrid(d1d, d1d)
+    uidx = np.tril_indices_from(x, -1)
+    med_df = pd.DataFrame({"x":x[uidx], "y":y[uidx], "dist":mat[uidx]})
+    
+    med_df = rotate_df(med_df, -45)
+    
+    frac = 1
+    if cut_hi is not None and cut_hi < d1d.max() - d1d.min():
+        frac = cut_hi/(d1d.max() - d1d.min())
+        med_df = med_df[np.abs(med_df["x"] - med_df["y"]) <= cut_hi]
+        
+    if fig is not None:
+        ax = fig.subplots()
+    elif height is None:
+        fig, ax = plt.subplots(figsize=(width, width/2*frac))
+    else:
+        fig, ax = plt.subplots(figsize=(width, height))
+        
+    sns.scatterplot(
+        med_df, x="x_rot", y="y_rot", hue="dist", alpha=alpha,
+        ax=ax, marker="d", palette=cmap, linewidth=0, s=width*15
+    )
+    ax.spines[["left", "right", "top"]].set_visible(False)
+    ax.set(
+        yticks=[], ylabel="", xlabel="Genomic Position (bp)",
+        xticks=[med_df["x_rot"].min(), med_df["x_rot"].max()],
+        xticklabels=[
+            f"{df1d["Chrom_Start"].min()/1e6:.3f}Mb", 
+            f"{df1d["Chrom_End"].max()/1e6:.3f}Mb"
+        ]
+    )
+    if xticklabels is not None:
+        ax.set_xticklabels(xticklabels)
+    ax.xaxis.set_label_coords(0.5, -.05)
+    # Show the top of the triangle if frac is 1
+    if frac == 1:
+        ax.set(ylim=(med_df["y_rot"].min(), ax.get_ylim()[1]))
+    else:
+        ax.set(ylim=(med_df["y_rot"].min(), med_df["y_rot"].max()))
+    ax.grid(False)
+    ax.legend().remove()
+    
+    norm = mcolors.Normalize(
+        vmin=med_df["dist"].min(), 
+        vmax=med_df["dist"].max()
+    )
+    sm = cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])  # Needed for colorbar
+    cbar = fig.colorbar(sm, ax=ax, aspect=10, pad=0.02, fraction=0.1/width)
+    
+    return fig, ax, cbar
+
+
 def compare_loops(
     df1:pd.DataFrame, df2:pd.DataFrame, 
-    map1:str, map2:str,
-    ax:plt.axis=None, 
+    map1:str="", map2:str="",
+    c1:str="r", c2:str="b",
+    ax:plt.Axes=None, 
     eval_func:callable=np.mean
-) -> plt.axis:
+) -> plt.Axes:
     """Plot two sets of loops together.
 
     Parameters
@@ -128,8 +240,8 @@ def compare_loops(
         Label for the first set of loops.
     map2 : str
         Label for the second set of loops.
-    ax : plt.axis, optional
-        plt.axis object, by default None.
+    ax : plt.Axes, optional
+        plt.Axes object, by default None.
     eval_func : callable, optional
         Where to plot the two loci of each loop, by default np.mean, 
         which will plot the mean of `s` and `e`. Can also be np.min, 
@@ -148,19 +260,29 @@ def compare_loops(
 
     if ax is None:
         fig, ax = plt.subplots(figsize=(3, 3))
-    sns.scatterplot(df1, x="val2", y="val1", s=3, ax=ax)
-    sns.scatterplot(df2, x="val1", y="val2", s=2, ax=ax)
-    ax.set(xlabel="1D genomic location", ylabel=map2, yticks=[])
+    sns.scatterplot(df1, x="val2", y="val1", s=3, ax=ax, color=c1, alpha=.5)
+    sns.scatterplot(df2, x="val1", y="val2", s=3, ax=ax, color=c2, alpha=.5)
+    ax.set(xlabel="1D genomic location", ylabel=None, yticks=[])
     ax.invert_yaxis()
-    ax2 = ax.twiny()
-    ax2.set(xlabel=map1, xticks=[])
     ax.set_box_aspect(1)
+    
+    (x1, x2), (y1, y2) = ax.get_xlim(), ax.get_ylim()
+    ax.text(x1 + 0.01*(x2-x1), y1 + 0.01*(y2-y1), map2)
+    ax.text(
+        x2 - 0.01*(x2-x1), y2 - 0.01*(y2-y1), map1,
+        verticalalignment="top", horizontalalignment="right"
+    )
 
-    ax.spines["left"].set_visible(False)
-    ax2.spines["left"].set_visible(False)
-
-    ax.spines["bottom"].set_visible(False)
-    ax2.spines["bottom"].set_visible(False)
+    ax.spines[["left", "bottom", "right", "top"]].set_visible(True)
+    
+    xmin = min(df1["val1"].min(), df2["val1"].min())
+    xmax = max(df1["val1"].max(), df2["val1"].max())
+    ax.set(
+        xlabel="Genomic Position (bp)", xticks=[xmin, xmax],
+        xticklabels=[f"{xmin/1e6:.3f}Mb", f"{xmax/1e6:.3f}Mb"]
+    )
+    ax.xaxis.set_label_coords(0.5, -.05)
+    ax.grid(False)
     
     return ax
 

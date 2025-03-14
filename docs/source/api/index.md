@@ -17,6 +17,14 @@ preprocess
 tools
 ```
 
+## Wrapper Functions
+
+```{toctree}
+:maxdepth: 3
+
+wrapper
+```
+
 ## Plotting modules
 
 ```{toctree}

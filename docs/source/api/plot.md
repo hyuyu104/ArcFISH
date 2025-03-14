@@ -12,6 +12,7 @@
 
     pl.cast_to_distmat
     pl.pairwise_heatmap
+    pl.triangle_heatmap
     pl.background_model
     pl.compare_loops
     pl.plot_TAD_boundary

@@ -387,6 +387,8 @@ class LoopCaller:
     ----------
     fdr_cutoff: float
         FDR cut-off for chromatin loops, by default 0.1.
+    pval_cutoff: float
+        P-value cut-off to filter loop summits, by default 1e-5.
     cut_lo : float, optional
         Minimum loop size (1D genomic distance between the first locus
         and the second locus), by default 1e5.
@@ -398,26 +400,39 @@ class LoopCaller:
     outer_cut : float, optional
         Loci with 1D genomic distance within `outer_cut` from the target 
         locus is included in the local background, by default 50e3.
+        Must be larger than 25kb, which is the exclusion cutoff.
+    ltclass : LoopTestAbstract
+        Test method used, by default :class:`AxisWiseF`.
     """
     def __init__(
         self,
         fdr_cutoff:float=0.1,
+        pval_cutoff:float=1e-5,
         cut_lo:float=1e5,
         cut_up:float=1e6,
         gap:float=50e3,
-        outer_cut:float=50e3
+        outer_cut:float=50e3,
+        ltclass:LoopTestAbstract=AxisWiseF
     ):
         self._fdr_cutoff = fdr_cutoff
+        self._pval_cutoff = pval_cutoff
         self._cut_lo = int(cut_lo)
         self._cut_up = int(cut_up)
         
         self._gap = int(gap)
         self._outer_cut = int(outer_cut)
+        
+        self._ltclass = ltclass
 
     @property
     def fdr_cutoff(self) -> float:
         """float : FDR cut-off for chromatin loops."""
         return self._fdr_cutoff
+    
+    @property
+    def pval_cutoff(self) -> float:
+        """float : P-value cut-off to filter loop summits."""
+        return self._pval_cutoff
     
     @property
     def loop_range(self) -> Tuple[int, int]:
@@ -440,8 +455,7 @@ class LoopCaller:
     
     def call_loops(
         self, 
-        adata:AnnData,
-        ltclass:LoopTestAbstract=AxisWiseF
+        adata:AnnData
     ) -> dict:
         """Call chromatin loops from a single chromosome.
 
@@ -450,8 +464,6 @@ class LoopCaller:
         adata : AnnData
             adata of a single chromosome, created by 
             :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
-        ltclass : LoopTestAbstract
-            Test method used, by default :class:`AxisWiseF`.
 
         Returns
         -------
@@ -460,7 +472,7 @@ class LoopCaller:
             summit. Values are (p,p) matrices. Might also contain other
             values depending on the test class used.
         """
-        test_class = ltclass(adata)
+        test_class = self._ltclass(adata)
         
         result = {}
         test_class.append_pval(
@@ -489,6 +501,8 @@ class LoopCaller:
         )
         
         test_class.append_summit(result)
+        
+        result["final"] = result["summit"]&(result["pval"]<self._pval_cutoff)
             
         return result
     

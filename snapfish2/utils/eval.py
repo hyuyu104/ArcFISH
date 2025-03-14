@@ -265,3 +265,32 @@ def median_pdist(adata:AnnData, inplace:bool=True) -> None|np.ndarray:
     if not inplace:
         return med_dist
     adata.varp["med_dist"] = med_dist
+    
+    
+def pseudo_count(adata:AnnData, threshold:float) -> np.ndarray:
+    """Thresholding pairwise distances to create a count matrix.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Object created by :func:`FOF_CT_Loader.create_adata`.
+    threshold : float
+        Entries with pairwise distance smaller than this threshold are
+        considered as a count.
+
+    Returns
+    -------
+    np.ndarray
+        p by p pseudo count matrix.
+    """
+    n = adata.shape[0]
+    # Size of n*d*c*c = 1GB
+    c = round(1 * (n * 3 * 8 / 1e9) ** -0.5)
+    
+    val_cols = ["X", "Y", "Z"]
+    X = da.from_array(np.stack([
+        adata.layers[c] for c in val_cols
+    ]), chunks=(3,n,c))
+    arr = X[:,:,:,None] - X[:,:,None,:]
+    pdists = da.sqrt(da.sum(da.square(arr), axis=0))
+    return da.sum(pdists < threshold, axis=0).compute()

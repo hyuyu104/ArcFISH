@@ -1,13 +1,8 @@
-from typing import Tuple
-from typing import Callable
-from pathlib import Path
-import shutil
-import tempfile
 import csv
+from pathlib import Path
 import numpy as np
 import pandas as pd
 from anndata import AnnData
-import dask.array as da
 
 
 class FOF_CT_Loader:
@@ -24,20 +19,39 @@ class FOF_CT_Loader:
     `Trace_ID`.
     
     For other FOF_CT files, call :func:`read_data` to read in the data
-    field as a dataframe.
+    field as a dataframe. The only required argument is `path`, all 
+    other arguments passed to the constructor will be ignored.
 
     Parameters
     ----------
     path : str | list | dict
         The path of the FOF_CT file. Can be a list or a dictionary
         specifying multiple files.
+    voxel_ratio : dict | None, optional
+        The conversion factor to convert voxel coordinate to actual
+        physical coordinate. No conversion if None, by default None.
+    var_cols_add : list | None, optional
+        Additional columns added to `var` field in the AnnData 
+        object, by default None.
+    obs_cols_add : list | None, optional
+        Additional columns added to `obs` field in the AnnData
+        object, by default None.
+    kwargs : dict
+        Additional keyword arguments passed to 
+        :class:`anndata:anndata.AnnData` constructor.
 
     Raises
     ------
     ValueError
         If `path` is not a string, a list, or a dictionary.
     """
-    def __init__(self, path:str|list|dict):
+    def __init__(self, 
+        path:str|list|dict,
+        voxel_ratio:dict|None=None,
+        var_cols_add:list|None=None,
+        obs_cols_add:list|None=None,
+        **kwargs             
+    ):
         if isinstance(path, str):
             self._info = self._read_info(path)
         elif isinstance(path, list):
@@ -49,19 +63,58 @@ class FOF_CT_Loader:
         
         self._path = path
         
+        self._voxel_ratio = voxel_ratio
+        self._var_cols_add = var_cols_add
+        self._obs_cols_add = obs_cols_add
+        self._kwargs = kwargs
+        
     @property
-    def info(self) -> str|list|dict:
-        """The information in the header of the FOF-CT files.
-
-        Returns
-        -------
-        list|dict
-            If `path` is a single file name, returns a dictionary of the 
-            header information. If `path` is a list, returns a list of 
-            informationdictionaries. If `path` is a dictionary, returns 
-            a dictionary of information dictionaries.
+    def path(self) -> str|list|dict:
+        """str|list|dict : Path of input files.
+        """
+        return self._path
+    
+    @property
+    def voxel_ratio(self) -> dict|None:
+        """dict|None : Conversion factor to convert voxel coordinate to
+        actual physical coordinate.
+        """
+        return self._voxel_ratio
+        
+    @property
+    def info(self) -> list|dict:
+        """list|dict : If `path` is a single file name, returns a 
+        dictionary of the header information. If `path` is a list, 
+        returns a list of information dictionaries. If `path` is a 
+        dictionary, returns a dictionary of information dictionaries.
         """
         return self._info
+    
+    @property
+    def chr_ids(self) -> np.ndarray:
+        """np.ndarray : Available chromosomes in FOF_CT-core."""
+        if isinstance(self._path, str):
+            paths = [self._path]
+            infos = [self._info]
+        elif isinstance(self._path, list):
+            paths = self._path
+            infos = self._info
+        elif isinstance(self._path, dict):
+            paths = list(self._path.values())
+            infos = [self._info[k] for k in self._path]
+        
+        chrom_df = []
+        for path, info in zip(paths, infos):
+            df = pd.read_csv(
+                path, 
+                skiprows=len(info),
+                header=None,
+                usecols=[info["columns"].index("Chrom")],
+                names=["Chrom"]
+            )
+            chrom_df.append(df)
+        chrom_df = pd.concat(chrom_df).drop_duplicates()
+        return chrom_df["Chrom"].values
 
     @staticmethod
     def _read_info(path):
@@ -79,10 +132,15 @@ class FOF_CT_Loader:
                 else:
                     sep = line.find(": ")
                     info_dict[line[start+1:sep]] = line[sep+2:].strip(",")
+            # Columns in the header
+            if "columns" in info_dict:
+                # Parse the column names as a list
+                cols = info_dict["columns"].strip("()").split(",")
+            # Column names in data
+            else:
+                cols = info_lines[-1].split(",")
+            info_dict["columns"] = [t.strip() for t in cols]
         
-        # Parse the column names as a list
-        cols = info_dict["columns"].strip("()").split(",")
-        info_dict["columns"] = [t.strip() for t in cols]
         return info_dict
     
     def read_data(self) -> pd.DataFrame|list|dict:
@@ -153,14 +211,7 @@ class FOF_CT_Loader:
         }, errors="ignore")
         return df
         
-    def create_adata(
-        self, 
-        chr_id:str,
-        voxel_ratio:dict|None=None,
-        var_cols_add:list|None=None,
-        obs_cols_add:list|None=None,
-        **kwargs
-    ) -> AnnData:
+    def create_adata(self, chr_id:str) -> AnnData:
         """Create an :class:`anndata:anndata.AnnData` object from a 
         single or multiple FOF_CT-core files. The output is for a single
         chromosome instead of all chromosomes imaged.
@@ -169,18 +220,6 @@ class FOF_CT_Loader:
         ----------
         chr_id : str
             Chromosome ID used to filter `Chrom` column.
-        voxel_ratio : dict | None, optional
-            The conversion factor to convert voxel coordinate to actual
-            physical coordinate. No conversion if None, by default None.
-        var_cols_add : list | None, optional
-            Additional columns added to `var` field in the AnnData 
-            object, by default None.
-        obs_cols_add : list | None, optional
-            Additional columns added to `obs` field in the AnnData
-            object, by default None.
-        kwargs : dict
-            Additional keyword arguments passed to 
-            :class:`anndata:anndata.AnnData` constructor.
 
         Returns
         -------
@@ -211,16 +250,16 @@ class FOF_CT_Loader:
             data = pd.concat(data, ignore_index=True)
         
         # Convert voxel coordinates to nm
-        if voxel_ratio is not None:
-            for k, v in voxel_ratio.items():
+        if self._voxel_ratio is not None:
+            for k, v in self._voxel_ratio.items():
                 data[k] = data[k] * v
                 
         var_cols = ["Chrom_Start", "Chrom_End"]
-        if var_cols_add is not None:
-            var_cols += var_cols_add
+        if self._var_cols_add is not None:
+            var_cols += self._var_cols_add
         obs_cols = []
-        if obs_cols_add is not None:
-            obs_cols += obs_cols_add
+        if self._obs_cols_add is not None:
+            obs_cols += self._obs_cols_add
 
         locus_map = {
             t:f"loc{i}" for i, t in 
@@ -249,7 +288,7 @@ class FOF_CT_Loader:
             obs=obs_map.loc[pivoted["X"].columns],
             layers={v: pivoted[v].T for v in val_cols},
             uns={"Chrom":chr_id},
-            **kwargs
+            **self._kwargs
         )
         return adata
     
@@ -346,13 +385,35 @@ def add_cell_type(
             type_df[cell_col].values
             .astype(v[cell_col].dtype)
         )
-        
-
-def to_very_wide(
-    adata:AnnData
-) -> Tuple[pd.DataFrame, np.ndarray]:
-    pass
 
 
-class ChromArray:
-    pass
+def save_fof_ct_core(df:pd.DataFrame, info:dict, path:Path):
+    """Save a dataframe as FOF_CT-core file.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Chromatin 3D coordinates.
+    info : dict
+        A dictionary containing FOF_CT-core header information.
+    path : Path
+        Output file path.
+    """
+    eq_keys = [
+        "FOF-CT_version", "Table_namespace", 
+        "genome_assembly", "XYZ_unit"
+    ]
+    df.to_csv(path, index=False, header=False)
+    header = ""
+    for k, v in info.items():
+        if k == "columns":
+            s = f'##{k}=({",".join(v)})\n'
+        elif k in eq_keys:
+            s = f"##{k}={v}\n"
+        else:
+            s = f"#{k}: {v}\n"
+        header += s
+    with open(path, "r") as f:
+        header += f.read()
+    with open(path, "w") as f:
+        f.write(header)
