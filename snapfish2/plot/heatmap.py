@@ -4,6 +4,7 @@ import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
+import matplotlib.patheffects as pe
 import matplotlib.colors as mcolors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -221,6 +222,7 @@ def triangle_heatmap(
 
 def compare_loops(
     df1:pd.DataFrame, df2:pd.DataFrame, 
+    chr_id:str|None=None,
     map1:str="", map2:str="",
     c1:str="r", c2:str="b",
     ax:plt.Axes=None, 
@@ -236,6 +238,8 @@ def compare_loops(
     df2 : pd.DataFrame
         The second list of loops to plot on the lower left triangle. 
         Must contain "c1", "s1", "e1", "c2", "s2", "e2" as columns.
+    chr_id : str, optional
+        Chromosome ID, by default None.
     map1 : str
         Label for the first set of loops.
     map2 : str
@@ -252,6 +256,9 @@ def compare_loops(
     plt.axis
         plt.axis object.
     """
+    if chr_id is not None:
+        df1 = df1[df1["c1"]==chr_id]
+        df2 = df2[df2["c1"]==chr_id]
     df1, df2 = df1.copy(), df2.copy()
     df1["val1"] = eval_func(df1[["s1", "e1"]], axis=1)
     df1["val2"] = eval_func(df1[["s2", "e2"]], axis=1)
@@ -260,29 +267,42 @@ def compare_loops(
 
     if ax is None:
         fig, ax = plt.subplots(figsize=(3, 3))
-    sns.scatterplot(df1, x="val2", y="val1", s=3, ax=ax, color=c1, alpha=.5)
-    sns.scatterplot(df2, x="val1", y="val2", s=3, ax=ax, color=c2, alpha=.5)
-    ax.set(xlabel="1D genomic location", ylabel=None, yticks=[])
+    sns.scatterplot(df1, x="val2", y="val1", s=5, linewidth=0, ax=ax, color=c1)
+    sns.scatterplot(df2, x="val1", y="val2", s=5, linewidth=0, ax=ax, color=c2)
     ax.invert_yaxis()
     ax.set_box_aspect(1)
     
-    (x1, x2), (y1, y2) = ax.get_xlim(), ax.get_ylim()
-    ax.text(x1 + 0.01*(x2-x1), y1 + 0.01*(y2-y1), map2)
-    ax.text(
-        x2 - 0.01*(x2-x1), y2 - 0.01*(y2-y1), map1,
-        verticalalignment="top", horizontalalignment="right"
-    )
+    # The ax is already initialized with plots
+    if ax.get_xlim() != (0, 1):
+        xmin, xmax = ax.get_xlim()
+    else:
+        xmin = min(df1["val1"].min(), df2["val1"].min(), df1["val2"].min(), df2["val2"].min())
+        xmax = max(df1["val1"].max(), df2["val1"].max(), df1["val2"].max(), df2["val2"].max())
+        offset = (xmax - xmin) * 0.05
+        ax.set(xlim=(xmin-offset, xmax+offset), ylim=(xmax+offset, xmin-offset))
 
     ax.spines[["left", "bottom", "right", "top"]].set_visible(True)
     
-    xmin = min(df1["val1"].min(), df2["val1"].min())
-    xmax = max(df1["val1"].max(), df2["val1"].max())
     ax.set(
-        xlabel="Genomic Position (bp)", xticks=[xmin, xmax],
+        xlabel="1D Position", xticks=[xmin, xmax],
+        ylabel=None, yticks=[],
         xticklabels=[f"{xmin/1e6:.3f}Mb", f"{xmax/1e6:.3f}Mb"]
     )
     ax.xaxis.set_label_coords(0.5, -.05)
     ax.grid(False)
+    
+    fontsize = ax.xaxis.label.get_size()
+    (x1, x2), (y1, y2) = ax.get_xlim(), ax.get_ylim()
+    ax.text(
+        x1 + 0.03*(x2-x1), y1 + 0.03*(y2-y1), map2, fontsize=fontsize,
+        verticalalignment="bottom", horizontalalignment="left",
+        path_effects=[pe.withStroke(linewidth=.5, foreground="white")]
+    )
+    ax.text(
+        x2 - 0.03*(x2-x1), y2 - 0.03*(y2-y1), map1, fontsize=fontsize,
+        verticalalignment="top", horizontalalignment="right",
+        path_effects=[pe.withStroke(linewidth=.5, foreground="white")]
+    )
     
     return ax
 
