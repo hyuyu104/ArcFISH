@@ -7,9 +7,12 @@ import matplotlib.cm as cm
 import matplotlib.patheffects as pe
 import matplotlib.colors as mcolors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from anndata import AnnData
 
 from .utils import cast_to_distmat, rotate_df
+from ..utils.eval import median_pdist, filter_normalize
 from ..tools.loop import LoopTestAbstract
+from ..tools.domain import TADCaller
 
 
 def pairwise_heatmap(
@@ -19,7 +22,7 @@ def pairwise_heatmap(
     x:str=None, 
     y:str=None, 
     title:str=None, 
-    cmap:str="seismic_r", 
+    cmap:str="RdBu", 
     **args
 ):
     """Single heatmap or two heatmaps in the upper and the lower 
@@ -276,10 +279,13 @@ def compare_loops(
     if ax.get_xlim() != (0, 1):
         xmin, xmax = ax.get_xlim()
     else:
-        xmin = min(df1["val1"].min(), df2["val1"].min(), df1["val2"].min(), df2["val2"].min())
-        xmax = max(df1["val1"].max(), df2["val1"].max(), df1["val2"].max(), df2["val2"].max())
+        xmin = min(df1["val1"].min(), df2["val1"].min(), 
+                   df1["val2"].min(), df2["val2"].min())
+        xmax = max(df1["val1"].max(), df2["val1"].max(), 
+                   df1["val2"].max(), df2["val2"].max())
         offset = (xmax - xmin) * 0.05
-        ax.set(xlim=(xmin-offset, xmax+offset), ylim=(xmax+offset, xmin-offset))
+        ax.set(xlim=(xmin-offset, xmax+offset), 
+               ylim=(xmax+offset, xmin-offset))
 
     ax.spines[["left", "bottom", "right", "top"]].set_visible(True)
     
@@ -305,6 +311,54 @@ def compare_loops(
     )
     
     return ax
+
+
+def domain_boundary(
+    adata:AnnData, 
+    caller:TADCaller, 
+    ax:plt.Axes|None=None
+):
+    if "var_X" not in adata.varp:
+        filter_normalize(adata)
+    res = caller.call_tads(adata)
+    res_df = caller.to_bedpe(res)
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(2.3, 2))
+    if caller.method == "pval":
+        col, ylabel = "fdr", "FDR"
+    elif caller.method == "insulation":
+        col, ylabel = "insulation", "Score"
+
+    med_dist = median_pdist(adata, inplace=False)
+    pairwise_heatmap(med_dist, ax=ax)
+    ax.spines[["top", "right", "bottom", "left"]].set_visible(True)
+
+    ax_divider = make_axes_locatable(ax)
+    cax = ax_divider.append_axes("bottom", size="10%", pad="0%")
+    c = sns.palettes.color_palette("dark")
+    sns.lineplot(y=res[col], x=res.index, color=c[0], ax=cax)
+    ylim = cax.get_ylim()
+    ylim = (ylim[0]-(ylim[1]-ylim[0])*.2, ylim[1]+(ylim[1]-ylim[0])*.2)
+
+    pos_ls = pd.unique(np.concatenate(res_df[["idx1", "idx2"]].values))[1:-1]
+    cax.vlines(pos_ls, linestyles="--", color=c[2], ymin=ylim[0], ymax=ylim[1])
+
+    cax.set(xlabel=None, ylabel=ylabel, ylim=ylim, xticks=[], yticks=[])
+    cax.spines[["top", "right", "bottom", "left"]].set_visible(True)
+    cax.grid(False)
+
+    for _, row in res_df.iterrows():
+        s = row.idx1
+        # Plotting correction for last index
+        if row.idx2 != len(res) - 1:
+            e = row.idx2
+        else:
+            e = row.idx2 + 1
+        ax.plot(
+            [s,e,e,s,s], [s,s,e,e,s],
+            color=c[2] if row.level == 0 else c[0]
+        )
 
     
 def plot_TAD_boundary(
@@ -415,8 +469,8 @@ def plot_AB_bars(
     cpmt_arr:np.ndarray, 
     ax:plt.Axes,
     size:str="5%",
-    ca:str="r",
-    cb:str="b"
+    ca=sns.palettes.color_palette("dark")[1],
+    cb=sns.palettes.color_palette("dark")[0]
 ):
     """Add A/B compartment assignments to a heatmap.
 

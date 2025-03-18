@@ -10,6 +10,42 @@ import seaborn as sns
 import snapfish2 as sf
 
 
+def tad_sample(out_dire):
+    tad_mat = np.zeros((15, 15), dtype="int64")
+    tad_mat[:5,:5] = 1
+    tad_mat[7:10,7:10] = 1
+    tad_mat[11:14,11:14] = 1
+    fig, ax = plt.subplots(figsize=(3, 3))
+    sf.pl.pairwise_heatmap(tad_mat, cbar=False, cmap="Reds", ax=ax)
+    fig.savefig(
+        os.path.join(out_dire, f"sample_tad.pdf"), 
+        bbox_inches="tight", 
+        pad_inches=.02, 
+        facecolor="black"
+    )
+    plt.clf()
+    
+    out = os.path.join(out_dire, "sample_pvals")
+    if not os.path.exists(out):
+        os.mkdir(out)
+    np.random.seed(10)
+    for i in range(6):
+        mat = np.random.uniform(0, 1, (15, 15))
+        fig, ax = plt.subplots(figsize=(3, 3))
+        sf.pl.pairwise_heatmap(
+            mat,
+            cbar=False, linewidth=1, linecolor="black",
+            cmap="viridis", ax=ax
+        )
+        fig.savefig(
+            os.path.join(out, f"{i}_pvals.pdf"), 
+            bbox_inches="tight", 
+            pad_inches=.02, 
+            facecolor="black"
+        )
+        plt.clf()
+
+
 def dist_diff_heatmaps(axes, adata, vmax1=60, vmax2=150):
     """Four heatmaps in one row."""
     coor_names = ["X", "Y", "Z"]

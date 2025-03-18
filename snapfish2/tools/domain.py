@@ -488,7 +488,7 @@ class ABCaller:
         ]), chunks=(3,n,c))
         arr = X[:,:,:,None] - X[:,:,None,:]
         # (n, p, p) pairwise distance matrices for each trace
-        dist_mats = da.sqrt(da.sum(da.square(arr), axis=1))
+        dist_mats = da.sqrt(da.sum(da.square(arr), axis=0))
         # (p, p) pseudo contact map
         contact_mat = da.sum(dist_mats < self._cutoff, axis=0)\
             /da.sum(~da.isnan(dist_mats), axis=0)

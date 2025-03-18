@@ -94,3 +94,99 @@ def chiapet_sub_df(
     sub_df = sub_df[(loop_len>=cut_lo)&(loop_len<=cut_hi)]
     
     return sub_df
+
+
+def _domain_chipseq_row(dtree, marker, boundaries):
+    true_df = pd.read_csv(
+        dtree["chipseq_mesc", marker, "peak"], sep="\t", header=None,
+        usecols=[0, 1, 2], names=["c1", "s1", "e1"]
+    )
+
+    overlapped = []
+    for c, df in boundaries.groupby("c1", sort=False):
+        ints1 = df[["s1", "e1"]].values
+        ints2 = true_df[true_df["c1"] == c][["s1", "e1"]].values
+        df = df.copy()
+        df["overlapped"] = sf.tl.overlap(ints1, ints2)
+        overlapped.append(df)
+    overlapped = pd.concat(overlapped, ignore_index=True)
+    
+    return {
+        "frac": overlapped["overlapped"].mean(),
+        "num": overlapped["overlapped"].sum(),
+        "total": len(overlapped), "marker": marker
+    }
+
+def domain_chipseq_df(dtree, loader, res1, res2, markers):
+    d1df = []
+    for chr_id in loader.chr_ids:
+        df = loader.create_adata(chr_id).var
+        df["c1"] = chr_id
+        d1df.append(df)
+    d1df = pd.concat(d1df, ignore_index=True).rename({
+        "Chrom_Start": "s1", "Chrom_End": "e1"
+    }, axis=1)[["c1", "s1", "e1"]]
+    
+    # Format res1 as bed
+    df2 = res1[["c2", "s2", "e2"]].copy()
+    df2.columns = ["c1", "s1", "e1"]
+    res1 = pd.concat([
+        res1[["c1", "s1", "e1"]], df2
+    ], axis=0).drop_duplicates()
+    res1 = res1.groupby(
+        "c1", sort=False
+    ).head(-1).groupby(
+        "c1", sort=False
+    ).tail(-1)
+    
+    # Format res2 as bed
+    df2 = res2[["c2", "s2", "e2"]].copy()
+    df2.columns = ["c1", "s1", "e1"]
+    res2 = pd.concat([
+        res2[["c1", "s1", "e1"]], df2
+    ], axis=0).drop_duplicates()
+    res2 = res2.groupby(
+        "c1", sort=False
+    ).head(-1).groupby(
+        "c1", sort=False
+    ).tail(-1)
+    
+    rows = []
+    for label, df in zip(
+        ["Average", "SnapFISH", "SnapFISH2"],
+        [d1df, res1, res2]
+    ):
+        for marker in markers:
+            row = _domain_chipseq_row(dtree, marker, df)
+            row["Method"] = label
+            rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def domain_add_chipseq_col(res, marker, dtree):
+    if "c2" in res.columns:
+        df2 = res[["c2", "s2", "e2"]].copy()
+        df2.columns = ["c1", "s1", "e1"]
+        res = pd.concat([
+            res[["c1", "s1", "e1"]], df2
+        ], axis=0).drop_duplicates()
+        res = res.groupby(
+            "c1", sort=False
+        ).head(-1).groupby(
+            "c1", sort=False
+        ).tail(-1)
+
+    true_df = pd.read_csv(
+        dtree["chipseq_mesc", marker, "peak"], sep="\t", header=None,
+        usecols=[0, 1, 2], names=["c1", "s1", "e1"]
+    )
+
+    overlapped = []
+    for c, df in res.groupby("c1", sort=False):
+        ints1 = df[["s1", "e1"]].values
+        ints2 = true_df[true_df["c1"] == c][["s1", "e1"]].values
+        df = df.copy()
+        df[marker] = sf.tl.overlap(ints1, ints2)
+        overlapped.append(df)
+    overlapped = pd.concat(overlapped, ignore_index=True)
+    return overlapped
