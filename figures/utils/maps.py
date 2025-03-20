@@ -116,7 +116,7 @@ def loop_map(loader, chr_id, fithic2, hicexpl, res_sf1, res_sf2):
     adata = loader.create_adata(chr_id)
     med_dist = sf.pp.median_pdist(adata, inplace=False)
     d1d = adata.var.mean(axis=1).values
-    x, y = x, y = list(map(lambda x: x.flatten(), np.meshgrid(d1d, d1d)))
+    x, y = list(map(lambda x: x.flatten(), np.meshgrid(d1d, d1d)))
     hm_df = pd.DataFrame({"x": x, "y": y, "dist": med_dist.flatten()})
     fig, axes = plt.subplots(1, 4, figsize=(8, 2))
     for ax in axes:
@@ -133,4 +133,28 @@ def loop_map(loader, chr_id, fithic2, hicexpl, res_sf1, res_sf2):
                         "HiCExplorer", "SnapFISH2", ax=axes[3])
     for ax in axes:
         ax.get_legend().remove()
+    return fig
+
+
+def pair_loop_map(adata1, adata2, df, chr_id):
+    fig, ax = plt.subplots(figsize=(2, 2))
+    d1d = adata1.var.mean(axis=1).values
+    
+    med_dist1 = sf.pp.median_pdist(adata1, inplace=False)
+    uidx = np.triu_indices_from(med_dist1)
+    x, y = list(map(lambda x: x[uidx], np.meshgrid(d1d, d1d)))
+    hm_df1 = pd.DataFrame({"x": x, "y": y, "dist": med_dist1[uidx]})
+    
+    med_dist2 = sf.pp.median_pdist(adata2, inplace=False)
+    lidx = np.tril_indices_from(med_dist2, -1)
+    x, y = list(map(lambda x: x[lidx], np.meshgrid(d1d, d1d)))
+    hm_df2 = pd.DataFrame({"x": x, "y": y, "dist": med_dist1[lidx]})
+    
+    hm_df = pd.concat([hm_df1, hm_df2], ignore_index=True)
+    sns.scatterplot(hm_df, x="x", y="y", hue="dist", ax=ax, alpha=.8,
+                    palette="RdBu", s=5, marker="s", linewidth=0)
+    
+    sf.pl.compare_loops(df[df["diff"]], df[~df["diff"]], chr_id,
+                        "Differential", "Non-Differential", ax=ax)
+    ax.get_legend().remove()
     return fig

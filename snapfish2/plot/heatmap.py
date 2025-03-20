@@ -7,6 +7,7 @@ import matplotlib.cm as cm
 import matplotlib.patheffects as pe
 import matplotlib.colors as mcolors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.typing import ColorType
 from anndata import AnnData
 
 from .utils import cast_to_distmat, rotate_df
@@ -316,8 +317,23 @@ def compare_loops(
 def domain_boundary(
     adata:AnnData, 
     caller:TADCaller, 
-    ax:plt.Axes|None=None
+    ax:plt.Axes|None=None,
+    **kwargs
 ):
+    """Plot domain boundaries on median pairwise distance heatmap.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Object created by 
+        :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+    caller : TADCaller
+        Instantiated TAD caller object.
+    ax : plt.Axes | None, optional
+        Plot ax, by default None.
+    **kwargs : dict
+        Additional keyword arguments passed to :func:`pairwise_heatmap`.
+    """
     if "var_X" not in adata.varp:
         filter_normalize(adata)
     res = caller.call_tads(adata)
@@ -331,7 +347,7 @@ def domain_boundary(
         col, ylabel = "insulation", "Score"
 
     med_dist = median_pdist(adata, inplace=False)
-    pairwise_heatmap(med_dist, ax=ax)
+    pairwise_heatmap(med_dist, ax=ax, **kwargs)
     ax.spines[["top", "right", "bottom", "left"]].set_visible(True)
 
     ax_divider = make_axes_locatable(ax)
@@ -359,118 +375,44 @@ def domain_boundary(
             [s,e,e,s,s], [s,s,e,e,s],
             color=c[2] if row.level == 0 else c[0]
         )
+        
 
-    
-def plot_TAD_boundary(
-    result:pd.DataFrame, 
-    bedpe:pd.DataFrame, 
-    cols:list, 
-    ax:plt.Axes,
-    tad_colors:list, 
-    line_colors:list,
-    line_names:list=None,
-    diff:bool=False,
-    rotation:float=0,
-    size:str="8%",
-    **kwargs
-) -> list[plt.Axes]:
-    """Plot TAD boundaries on a heatmap and a list of scores on the left
-    of the heatmap.
+def add_domain_fdr(ax:plt.Axes, res:pd.DataFrame):
+    """Add differential domain FDR to an existing heatmap.
 
     Parameters
     ----------
-    result : pd.DataFrame
-        Output from :func:`snapfish2.analysis.domain.TADCaller.by_pval` 
-        or :func:`snapfish2.analysis.domain.TADCaller.by_insulation`.
-    bedpe : pd.DataFrame
-        Output from :func:`snapfish2.analysis.domain.TADCaller.to_bedpe`
-        by inputting `result`.
-    cols : list
-        A list of columns in result to plot alongside the boundaries. 
-        Can be stat, pval, and fdr for results called by p-values, or 
-        insulation for results called by insulation scores.
     ax : plt.Axes
-        Heatmap ax to add TAD boundaries and scores.
-    tad_colors : list
-        A list of colors at least of the same length as the number of 
-        unique levels in `bedpe`. This will be the TAD boundary colors.
-    line_colors : list
-        A list of colors at least of the same length as `cols`.
-    line_names : list, optional
-        Same length as `cols`. Displayed names of `cols`. If None, will
-        use `cols` as `line_names`, by default None.
-    diff : bool, optional
-        Whether to show the p-values and FDR from differential TAD 
-        calling, by default False. If True, have to replace `bedpe` by
-        result from 
-        :func:`snapfish2.analysis.domain.DiffRegion.diff_region`.
-    rotation : float, optional
-        Rotation of score labels, by default 0.
-    size : str, optional
-        The width of score columns, by default `8%`.
-
-    Returns
-    -------
-    list[plt.Axes]
-        Score column axes.
+        Ax with heatmap.
+    res : pd.DataFrame
+        Differential domain result from 
+        :func:`sf.tl.DiffRegion.diff_region`.
     """
-    result = result.reset_index(drop=True)
-    bedpe = bedpe.reset_index(drop=True)
-    
-    ax.spines[["left", "bottom", "right","top"]].set_visible(True)
-
-    for lvl in np.unique(bedpe.level)[::-1]:
-        df = bedpe[bedpe["level"]==lvl]
-        for _, row in df.iterrows():
-            s = row.idx1
-            # Plotting correction for last index
-            if row.idx2 != len(result) - 1:
-                e = row.idx2
-            else:
-                e = row.idx2 + 1
-            ax.plot(
-                [s,e,e,s,s], [s,s,e,e,s], 
-                color=tad_colors[lvl], **kwargs
-            )
-            if diff:
-                text = f"Pval={row["pval"]:.2f}\nFDR={row["fdr"]:.2f}"
-                ax.text(
-                    e, s+.1, text, fontdict={"fontsize":8}, color="k",
-                    horizontalalignment="right", verticalalignment="top"
-                )
-    pos_ls = pd.unique(np.concatenate(bedpe[["idx1", "idx2"]].values))[1:-1]
-
-    ax_divider = make_axes_locatable(ax)
-    caxs = []
-    for i, col in enumerate(cols):
-        cax = ax_divider.append_axes("left", size=size, pad="0%", sharey=ax)
-        sns.lineplot(
-            x=result[col], y=result.index, ax=cax,
-            orient="y", color=line_colors[i], 
-        )
-        cax.set(xticks=[])
-        if line_names is None:
-            cax.set_xlabel(col, rotation=rotation)
+    c = sns.palettes.color_palette("dark")
+    for _, row in res.iterrows():
+        s = row.idx1
+        # Plotting correction for last index
+        if row.idx2 != ax.get_xlim()[1]-1:
+            e = row.idx2
         else:
-            cax.set_xlabel(line_names[i], rotation=rotation)
-        cax.spines[["right","top"]].set_visible(True)
-        xmin, xmax = cax.get_xlim()
-        
-        cax.hlines(
-            pos_ls, linestyles="--", color=tad_colors[0], 
-            xmin=xmin, xmax=xmax, **kwargs
+            e = row.idx2 + 1
+        ax.plot(
+            [s,e,e,s,s], [s,s,e,e,s],
+            color=c[2] if row.level == 0 else c[0]
         )
-        caxs.append(cax)
-    
-    return caxs
+        ax.text(
+            e-res.idx2.max()*.01, s+res.idx2.max()*.02, 
+            f"FDR={row.fdr:.2f}", fontsize=8,
+            verticalalignment="top", horizontalalignment="right"
+        )
 
 
-def plot_AB_bars(
+def cpmt_bars(
     cpmt_arr:np.ndarray, 
     ax:plt.Axes,
     size:str="5%",
-    ca=sns.palettes.color_palette("dark")[1],
-    cb=sns.palettes.color_palette("dark")[0]
+    ca:ColorType=sns.palettes.color_palette("dark")[1],
+    cb:ColorType=sns.palettes.color_palette("dark")[0]
 ):
     """Add A/B compartment assignments to a heatmap.
 
@@ -483,10 +425,12 @@ def plot_AB_bars(
         Heatmap ax to add A/B compartment assignments.
     size : str, optional
         The width of A/B compartment column, by default "5%".
-    ca : str, optional
-        Color of A compartments, by default "r".
-    cb : str, optional
-        Color of B compartments, by default "b".
+    ca : ColorType, optional
+        Color of A compartments, by default 
+        `sns.palettes.color_palette("dark")[1]`.
+    cb : ColorType, optional
+        Color of B compartments, by default
+        `sns.palettes.color_palette("dark")[0]`.
     """
     ax_divider = make_axes_locatable(ax)
     ax.spines[["left", "bottom", "right","top"]].set_visible(True)

@@ -15,6 +15,6 @@
     pl.triangle_heatmap
     pl.background_model
     pl.compare_loops
-    pl.plot_TAD_boundary
-    pl.plot_AB_bars
+    pl.domain_boundary
+    pl.cpmt_bars
 ```

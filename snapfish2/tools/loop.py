@@ -687,7 +687,9 @@ class DiffLoop:
             f_stats = adata1.varp[f"var_{c}"]/adata2.varp[f"var_{c}"]
             count1 = adata1.varp[f"count_{c}"]
             count2 = adata2.varp[f"count_{c}"]
-            f_pvals.append(stats.f.cdf(f_stats, count1, count2))
+            f_pval = stats.f.cdf(f_stats, count1, count2)
+            f_pval = 2*np.min(np.stack([f_pval, 1 - f_pval]), axis=0)
+            f_pvals.append(f_pval)
         f_pvals = np.stack(f_pvals)
         return f_pvals
         
