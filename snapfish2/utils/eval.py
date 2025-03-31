@@ -1,12 +1,9 @@
-import tempfile
-import shutil
-from pathlib import Path
 import numpy as np
 from anndata import AnnData, concat
 import dask.array as da
 
 
-def _filter_pdiff(adata:AnnData, tmp_path:str, nstds:float):
+def _filter_pdiff(adata:AnnData, nstds:float) -> da.Array:
     n = adata.shape[0]
     # Size of n*d*c*c = 1GB
     c = round(1 * (n * 3 * 8 / 1e9) ** -0.5)
@@ -34,11 +31,10 @@ def _filter_pdiff(adata:AnnData, tmp_path:str, nstds:float):
     med_stds = med_stds[:,None,:,:]
 
     arr[da.abs(arr) > med_stds*nstds] = np.nan
-    arr.to_zarr(tmp_path, overwrite=True)
+    return arr
     
     
-def _normalized_dask_arr(adata:AnnData, tmp_path:str) -> da:
-    arr = da.from_zarr(tmp_path)
+def _normalized_dask_arr(adata:AnnData, arr:da.Array) -> da.Array:
     count = da.sum(~da.isnan(arr), axis=1).compute()
     for i, c in enumerate(["X", "Y", "Z"]):
         adata.varp[f"count_{c}"] = count[i]
@@ -75,9 +71,9 @@ def _normalized_dask_arr(adata:AnnData, tmp_path:str) -> da:
     return arr/std_by1d[:,None,:,:]
     
     
-def _normalize_by1d(adata:AnnData, tmp_path:str):
+def _normalize_by1d(adata:AnnData, arr:da.Array):
     var_norm = da.nanmean(da.square(
-        _normalized_dask_arr(adata, tmp_path)
+        _normalized_dask_arr(adata, arr)
     ), axis=1).compute()
     for i, c in enumerate(["X", "Y", "Z"]):
         adata.varp[f"var_{c}"] = var_norm[i]
@@ -85,9 +81,7 @@ def _normalize_by1d(adata:AnnData, tmp_path:str):
 
 def filter_normalize(
     adata:AnnData, 
-    tmp_path:Path|None=None, 
-    nstds:float=4,
-    keep_zarr:bool=False
+    nstds:float=4
 ):
     """Filter outliers and normalized by 1D genomic distance.
     
@@ -95,11 +89,6 @@ def filter_normalize(
     median pairwise difference stratified by 1D genomic distance. 
     Then normalize the pairwise difference by the standard deviations
     stratified by 1D genomic distance.
-    
-    Store the intermediate pairwise difference tensor as a .zarr file
-    and applies dask operations. The intermediate .zarr file can be 
-    large (e.g. ~6 GB for 1000 traces each of dimension 1000), so make
-    sure the storage space is large enough.
     
     Append the followings to the `varp` field of `adata`:
     
@@ -116,41 +105,12 @@ def filter_normalize(
     ----------
     adata : AnnData
         Object created by :func:`FOF_CT_Loader.create_adata`.
-    tmp_path : Path | None, optional
-        Where to store the intermediate pairwise difference. If None, 
-        will create a temporary directory with 
-        :class:`~tempfile.TemporaryDirectory` and remove it after all 
-        computations are done, by default None.
     nstds : float, optional
         Values larger than this number of standard deviations away from
         the median will be removed, by default 4.
-    keep_zarr : bool, optional
-        Whether to keep the zarr file if `tmp_path` is not None, by
-        default False.
     """
-    if tmp_path is not None:
-        _filter_pdiff(
-            adata=adata,
-            tmp_path=tmp_path,
-            nstds=nstds
-        )
-        _normalize_by1d(
-            adata=adata,
-            tmp_path=tmp_path
-        )
-        if not keep_zarr:
-            shutil.rmtree(tmp_path)
-    else:
-        with tempfile.TemporaryDirectory() as tmp_path:
-            _filter_pdiff(
-                adata=adata,
-                tmp_path=tmp_path,
-                nstds=nstds
-            )
-            _normalize_by1d(
-                adata=adata,
-                tmp_path=tmp_path
-            )
+    arr = _filter_pdiff(adata=adata, nstds=nstds)
+    _normalize_by1d(adata=adata, arr=arr)
 
 
 def joint_filter_normalize(*args, **kwargs):
@@ -182,19 +142,18 @@ def joint_filter_normalize(*args, **kwargs):
     adataj.var = args[0].var.copy()
     adataj.uns["Chrom"] = args[0].uns["Chrom"]
     
-    with tempfile.TemporaryDirectory() as tmp_path:
-        _filter_pdiff(adata=adataj, tmp_path=tmp_path, nstds=nstds)
-        narr = _normalized_dask_arr(adata=adataj, tmp_path=tmp_path)
-        
-        for adata in args:
-            fil = adataj.obs_names.isin(adata.obs_names)
-            count = da.sum(~da.isnan(narr[:,fil,:,:]), axis=1).compute()
-            var_norm = da.nanmean(da.square(
-                narr[:,fil,:,:]
-            ), axis=1).compute()
-            for i, c in enumerate(["X", "Y", "Z"]):
-                adata.varp[f"count_{c}"] = count[i]
-                adata.varp[f"var_{c}"] = var_norm[i]
+    arr = _filter_pdiff(adata=adataj, nstds=nstds)
+    narr = _normalized_dask_arr(adata=adataj, arr=arr)
+    
+    for adata in args:
+        fil = adataj.obs_names.isin(adata.obs_names)
+        count = da.sum(~da.isnan(narr[:,fil,:,:]), axis=1).compute()
+        var_norm = da.nanmean(da.square(
+            narr[:,fil,:,:]
+        ), axis=1).compute()
+        for i, c in enumerate(["X", "Y", "Z"]):
+            adata.varp[f"count_{c}"] = count[i]
+            adata.varp[f"var_{c}"] = var_norm[i]
 
 
 def axis_weight(adata:AnnData, inplace:bool=True) -> None|np.ndarray:
