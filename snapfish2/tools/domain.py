@@ -667,3 +667,28 @@ class DiffRegion(DiffLoop):
         result_df["fdr"] = fdr_vals
         result_df["log_fdr"] = np.log(fdr_vals)
         return result_df
+    
+    def to_bedpe(
+        self, 
+        result:pd.DataFrame, 
+        fdr_cutoff:float=0.1
+    ) -> pd.DataFrame:
+        """Add a column `diff` to the result dataframe, indicating
+        whether the domain is differentially significant.
+
+        Parameters
+        ----------
+        result : pd.DataFrame
+            Differential domain result from :func:`diff_region`.
+        fdr_cutoff : float, optional
+            Domains with differential FDR below this cutoff are marked
+            as significant, by default 0.1.
+
+        Returns
+        -------
+        pd.DataFrame
+            Same format as `result`, with an additional column `diff`.
+        """
+        result = result.copy()
+        result["diff"] = result["fdr"] < fdr_cutoff
+        return result

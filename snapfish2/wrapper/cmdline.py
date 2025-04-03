@@ -104,6 +104,42 @@ def call_cpmts(args):
     pd.concat(result, ignore_index=True).to_csv(
         output, sep="\t", index=False
     )
+    
+    
+def diff_loops(args):
+    loader1 = pp.FOF_CT_Loader(args.input1)
+    loader2 = pp.FOF_CT_Loader(args.input2)
+    loops = pd.read_csv(args.loops, sep="\t")
+    
+    result = []
+    for chr_id in loader1.chr_ids:
+        adata1 = loader1.create_adata(chr_id=chr_id)
+        adata2 = loader2.create_adata(chr_id=chr_id)
+        diff = tl.DiffLoop(adata1, adata2)
+        res = diff.to_bedpe(diff.diff_loops(loops), args.fdr)
+        result.append(res)
+    
+    pd.concat(result, ignore_index=True).to_csv(
+        args.output, sep="\t", index=False
+    )
+    
+    
+def diff_domains(args):
+    loader1 = pp.FOF_CT_Loader(args.input1)
+    loader2 = pp.FOF_CT_Loader(args.input2)
+    domains = pd.read_csv(args.domains, sep="\t")
+    
+    result = []
+    for chr_id in loader1.chr_ids:
+        adata1 = loader1.create_adata(chr_id=chr_id)
+        adata2 = loader2.create_adata(chr_id=chr_id)
+        diff = tl.DiffDomain(adata1, adata2)
+        res = diff.to_bedpe(diff.diff_domains(domains), args.fdr)
+        result.append(res)
+        
+    pd.concat(result, ignore_index=True).to_csv(
+        args.output, sep="\t", index=False
+    )
 
 
 def main():
@@ -141,6 +177,22 @@ def main():
     parser_cp.add_argument("-o", "--output", type=str, required=True)
     parser_cp.add_argument("-min", "--min_cpmt_size", type=float, default=0)
     parser_cp.set_defaults(func=call_cpmts)
+    
+    parser_dl = subparsers.add_parser("dloop", help="Diff loops.")
+    parser_dl.add_argument("-i1", "--input1", type=str, required=True)
+    parser_dl.add_argument("-i2", "--input2", type=str, required=True)
+    parser_dl.add_argument("-l", "--loops", type=str, required=True)
+    parser_dl.add_argument("-o", "--output", type=str, required=True)
+    parser_dl.add_argument("-fdr", "--fdr_cutoff", type=float, default=0.1)
+    parser_dl.set_defaults(func=diff_loops)
+    
+    parser_dd = subparsers.add_parser("ddomain", help="Diff domains.")
+    parser_dd.add_argument("-i1", "--input1", type=str, required=True)
+    parser_dd.add_argument("-i2", "--input2", type=str, required=True)
+    parser_dd.add_argument("-d", "--domains", type=str, required=True)
+    parser_dd.add_argument("-o", "--output", type=str, required=True)
+    parser_dd.add_argument("-fdr", "--fdr_cutoff", type=float, default=0.1)
+    parser_dd.set_defaults(func=diff_domains)
     
     args = parser.parse_args()
     args.func(args)

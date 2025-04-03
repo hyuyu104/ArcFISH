@@ -32,8 +32,8 @@ def overlap(ints1:np.ndarray, ints2:np.ndarray, offset:float=0) -> np.ndarray:
         Whether each interval in the first list overlaps with intervals from
         the second list.
     """
-    a = ints1[:,[1]] - ints2[:,0] < offset
-    b = ints2[:,1] - ints1[:,[0]] < offset
+    a = ints1[:,[1]] - ints2[:,0] < -offset
+    b = ints2[:,1] - ints1[:,[0]] < -offset
     return np.any(~(a|b), axis=1)
 
 
