@@ -1,5 +1,11 @@
 # Tutorials
 
+```{toctree}
+:maxdepth: 2
+
+cli_usage
+```
+
 ## Example analysis
 
 ```{toctree}

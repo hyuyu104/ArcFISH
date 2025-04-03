@@ -366,9 +366,9 @@ class ABCaller:
     def __init__(
         self, 
         min_cpmt_size:float,
-         cutoff:float|None=None,
-         sigma:float|None=1,
-         method:Literal["axes", "pca"]="axes"
+        cutoff:float|None=None,
+        sigma:float|None=1,
+        method:Literal["axes", "pca"]="axes"
     ):
         self._min_cpmt_size = min_cpmt_size
         self._cutoff = cutoff

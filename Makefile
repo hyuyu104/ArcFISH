@@ -12,10 +12,6 @@ init-sphinx:
 	sphinx-quickstart docs
 	sphinx-build -M html docs/source/ docs/build/
 
-html:
-	cd docs; sphinx-apidoc -o ./source ../snapfish2;\
-	make clean; make html; cd ..
-
 git-add:
 	git add -A snapfish2
 	git add -A docs/source

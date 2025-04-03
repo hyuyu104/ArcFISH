@@ -46,7 +46,7 @@ docs = [
 ]
 
 [project.urls]
-Source = "https://github.com/hyuyu104/DNEYET"
+Source = "https://github.com/hyuyu104/SnapFISH2"
 Docs = "https://github.com/hyuyu104/DNEYET"
 
 [project.scripts]

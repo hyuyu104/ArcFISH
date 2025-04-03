@@ -9,8 +9,7 @@ def caller_wrapper(
     loader:pp.FOF_CT_Loader,
     loop:tl.LoopCaller|None=None, loop_path:Path|None=None,
     tad:tl.TADCaller|None=None, tad_path:Path|None=None,
-    cpmt:tl.ABCaller|None=None, cpmt_path:Path|None=None,
-    tmp_path:Path|None=None
+    cpmt:tl.ABCaller|None=None, cpmt_path:Path|None=None
 ):
     """Call loops/TADs/compartments for all chromosomes.
     
@@ -37,8 +36,6 @@ def caller_wrapper(
         Instantiated A/B compartment object, by default None.
     cpmt_path : Path | None, optional
         File to store A/B compartment calling result, by default None.
-    tmp_path : Path | None, optional
-        Temporary path to store pairwise differences, by default None.
     """
     result = {}
     for p in [loop_path, tad_path, cpmt_path]:
@@ -47,7 +44,7 @@ def caller_wrapper(
             
     for chr_id in loader.chr_ids:
         adata = loader.create_adata(chr_id)
-        pp.filter_normalize(adata, tmp_path=tmp_path)
+        pp.filter_normalize(adata)
         
         if loop_path in result:
             loop_df = loop.to_bedpe(loop.call_loops(adata), adata)
