@@ -444,3 +444,38 @@ def cpmt_bars(
     cax2.barh(np.where(cpmt_arr==0)[0], width=1, height=1, color=ca)
     cax2.spines[["right","top"]].set_visible(True)
     cax2.set(xticks=[], xlabel="A")
+    
+    
+def cpmt_vals(cpmt_arr:np.ndarray, ax:plt.Axes=None) -> plt.Axes:
+    """Plot A/B compartment values.
+
+    Parameters
+    ----------
+    cpmt_arr : np.ndarray
+        A/B compartment values.
+    ax : plt.Axes, optional
+        ax to plot values, by default None.
+
+    Returns
+    -------
+    plt.Axes
+        Ax with A/B compartment values.
+    """
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(7, 1))
+    df = pd.DataFrame({"s1":np.arange(len(cpmt_arr)), "val":cpmt_arr})
+    sns.lineplot(df, x="s1", y="val", color="y", ax=ax)
+    ax.spines["bottom"].set_visible(False)
+    xmin, xmax = ax.get_xlim()
+    ax.hlines([0], xmin=xmin, xmax=xmax, color="k", alpha=0.5)
+    ax.set(xlim=(xmin, xmax), xticks=[])
+    ax.fill_between(
+        df["s1"], df["val"], 0, where=df["val"]>=0,
+        alpha=0.5, color="r"
+    )
+    ax.fill_between(
+        df["s1"], df["val"], 0, where=df["val"]<=0,
+        alpha=0.5, color="b"
+    )
+    ax.grid(False)
+    return ax
