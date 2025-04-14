@@ -27,7 +27,8 @@ dependencies = [
     "statsmodels==0.14.1",
     "scikit-learn>=1.4.1",
     "anndata>=0.10.8",
-    "dask==2025.1.0"
+    "dask==2025.1.0",
+    "requests>=2.31.0",
 ]
 
 [tool.setuptools.dynamic]

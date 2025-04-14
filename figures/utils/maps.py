@@ -158,3 +158,57 @@ def pair_loop_map(adata1, adata2, df, chr_id):
                         "Differential", "Non-Differential", ax=ax)
     ax.get_legend().remove()
     return fig
+
+
+def cpmt_enrichment(
+    adata, res1, res2, chipseq, dtree,
+    up_rglt, down_rglt, name1, name2
+) -> plt.Figure:
+    df = res1[["s1"]].rename({"s1": "1D"}, axis=1)
+    df[name1] = res1["cpmt"]
+    df[name2] = res2["cpmt"]
+
+    d1df = adata.var.reset_index(drop=True)
+    d1df["Chrom"] = adata.uns["Chrom"]
+    d1df = d1df[["Chrom", "Chrom_Start", "Chrom_End"]]
+    for marker in dtree[chipseq]:
+        chip_df = pd.read_csv(
+            dtree[chipseq,marker], sep="\t", 
+            header=None, usecols=[0, 1, 2]
+        )
+        chip_df.columns = ["c1", "s1", "e1"]
+        
+        out_ls = []
+        for chr_id in pd.unique(d1df.Chrom):
+            sub_df = d1df[d1df["Chrom"]==chr_id].copy()
+            ints1 = sub_df.iloc[:,1:].values
+            ints2 = chip_df[chip_df["c1"]==chr_id][["s1","e1"]].values
+            out_ls.append(sub_df[sf.tl.overlap(ints1, ints2)])
+        chipseq_marked = pd.concat(out_ls, ignore_index=True).rename({
+            "Chrom":"c1", "Chrom_Start":"s1", "Chrom_End":"e1"
+        }, axis=1)["s1"].values
+
+        df[marker] = df["1D"].isin(chipseq_marked)
+        
+    expc = df.drop(["1D", name2, name1], axis=1).sum()/len(df)
+    summ1 = np.log2(df.drop(
+        ["1D", name2], axis=1
+    ).groupby(name1).mean()/expc)
+    summ2 = np.log2(df.drop(
+        ["1D", name1], axis=1    
+    ).groupby(name2).mean()/expc)
+
+    plt_df = pd.concat([summ1.T, summ2.T], axis=1)
+    plt_df.columns = [f"{name1} A", f"{name1} B", f"{name2} A", f"{name2} B"]
+    plt_df = plt_df[[f"{name1} A", f"{name2} A", f"{name1} B", f"{name2} B"]]
+    fig, axes = plt.subplots(1, 3, figsize=(len(up_rglt+down_rglt)*3/4,3), 
+                             width_ratios=[len(up_rglt),len(down_rglt),.2])
+    sns.heatmap(plt_df.T[up_rglt], vmin=-1, vmax=1, annot=True, square=True,
+                cmap="coolwarm", cbar=False, ax=axes[0])
+    axes[0].set(title="Active Transcription Markers")
+    axes[0].grid(False)
+    sns.heatmap(plt_df.T[down_rglt], vmin=-1, vmax=1, annot=True, square=True,
+                cmap="coolwarm", yticklabels=False, ax=axes[1], cbar_ax=axes[2])
+    axes[1].set(title="Inactive")
+    axes[1].grid(False)
+    return fig
