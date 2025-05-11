@@ -47,6 +47,7 @@
     :nosignatures:
 
     tl.overlap
+    tl.signal_overlap
     tl.loop_overlap
     tl.all_possible_pairs
 ```

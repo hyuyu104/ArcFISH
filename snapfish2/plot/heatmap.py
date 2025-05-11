@@ -121,6 +121,7 @@ def triangle_heatmap(
     df1d:pd.DataFrame, 
     cut_hi:None|float=None,
     cmap:str|mcolors.Colormap="RdBu",
+    hue_norm:None|mcolors.Normalize=None,
     fig:None|plt.Figure=None,
     width:float=3,
     height:None|float=None,
@@ -153,6 +154,9 @@ def triangle_heatmap(
         Color map used, can be either a string or a Colormap object
         created by :func:`~matplotlib:matplotlib.pyplot.get_cmap`, by 
         default "RdBu".
+    hue_norm : None | mcolors.Normalize, optional
+        Normalization for the color map, by default None. If None,
+        use the min and max of the data to normalize the color map.
     fig : None | plt.Figure, optional
         Figure object to plot the heatmap, by default None.
     width : float, optional
@@ -190,8 +194,8 @@ def triangle_heatmap(
         fig, ax = plt.subplots(figsize=(width, height))
         
     sns.scatterplot(
-        med_df, x="x_rot", y="y_rot", hue="dist", alpha=alpha,
-        ax=ax, marker="d", palette=cmap, linewidth=0, s=width*15
+        med_df, x="x_rot", y="y_rot", hue="dist", alpha=alpha, ax=ax, 
+        marker="d", palette=cmap, hue_norm=hue_norm, linewidth=0, s=width*15
     )
     ax.spines[["left", "right", "top"]].set_visible(False)
     ax.set(
@@ -334,8 +338,6 @@ def domain_boundary(
     **kwargs : dict
         Additional keyword arguments passed to :func:`pairwise_heatmap`.
     """
-    if "var_X" not in adata.varp:
-        filter_normalize(adata)
     res = caller.call_tads(adata)
     res_df = caller.to_bedpe(res)
 
@@ -375,6 +377,77 @@ def domain_boundary(
             [s,e,e,s,s], [s,s,e,e,s],
             color=c[2] if row.level == 0 else c[0]
         )
+        
+        
+def triangle_domain_boundary(
+    adata:AnnData,
+    caller:TADCaller,
+    fig:plt.Figure|None=None,
+    cut_hi:float|None=None,
+    **kwargs
+):
+    if fig is None:
+        fig = plt.figure(figsize=(4, 1.5))
+    
+    med_dist = median_pdist(adata, inplace=False)
+    ax, cbar = triangle_heatmap(
+        med_dist, adata.var, cut_hi=cut_hi, fig=fig, xticklabels=["", ""],
+        **kwargs
+    )[1:]
+    ax.set_xlabel("")
+    ax_divider = make_axes_locatable(ax)
+    cax = ax_divider.append_axes("bottom", size="40%", pad="10%")
+
+    df1d = adata.var.copy()
+    d1d = ((df1d["Chrom_End"] + df1d["Chrom_Start"])/2).values
+    x, y = np.meshgrid(d1d, d1d)
+    med_df = rotate_df(pd.DataFrame({
+        "x": x[np.tril_indices_from(x, 0)], 
+        "y": y[np.tril_indices_from(y, 0)],
+    }), -45).drop_duplicates("x")
+    res = caller.call_tads(adata)
+    res["x"] = (res["Chrom_End"] + res["Chrom_Start"])/2
+    res = pd.merge(res, med_df[["x", "x_rot"]], on="x")
+    
+    if caller.method == "pval":
+        col, ylabel = "fdr", "FDR"
+    elif caller.method == "insulation":
+        col, ylabel = "insulation", "Insulation"
+
+    c = sns.palettes.color_palette("dark")
+    sns.lineplot(res, x="x_rot", y=col, color=c[0], ax=cax)
+    sns.scatterplot(
+        res, x="x_rot", y=col, color=c[0], 
+        linewidth=0, s=3*fig.get_size_inches()[0], ax=cax
+    )
+    for x in res[res.peak]["x_rot"].values:
+        cax.axvline(x, ymin=0, ymax=1,
+                    linestyle="-", color="k", clip_on=False)
+        ax.axvline(x, ymin=-.5, ymax=0, zorder=0,
+                linestyle="-", color="k", clip_on=False)
+    cax.grid(False)
+    cax.set_xlim(*ax.get_xlim())
+
+    for _, row in caller.to_bedpe(res).iterrows():
+        # Move .5 bin up
+        s = (row.s1 + row.e1)/2 - (row.e1 - row.s1)/2
+        e = (row.s2 + row.e2)/2 + (row.e2 - row.s2)/2
+        df = rotate_df(pd.DataFrame({"x": [e,s,s], "y": [e,e,s]}))
+        ax.plot(df.x_rot, df.y_rot, color="k")
+    ax.set_xlim(*cax.get_xlim())
+    
+    cax.set(
+        xlabel="Genomic Position (bp)",
+        xticks=[med_df["x_rot"].min(), med_df["x_rot"].max()],
+        xticklabels=[
+            f"{df1d["Chrom_Start"].min()/1e6:.3f}Mb", 
+            f"{df1d["Chrom_End"].max()/1e6:.3f}Mb"
+        ],
+        ylabel=ylabel
+    )
+    cax.xaxis.set_label_coords(0.5, -.05)
+    
+    return ax, cbar, cax
         
 
 def add_domain_fdr(ax:plt.Axes, res:pd.DataFrame):

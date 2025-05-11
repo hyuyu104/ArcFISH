@@ -116,6 +116,19 @@ def _domain_chipseq_row(dtree, marker, boundaries):
         "num": overlapped["overlapped"].sum(),
         "total": len(overlapped), "marker": marker
     }
+    
+def domain_output_to_boundary(res):
+    df2 = res[["c2", "s2", "e2"]].copy()
+    df2.columns = ["c1", "s1", "e1"]
+    res = pd.concat([
+        res[["c1", "s1", "e1"]], df2
+    ], axis=0).drop_duplicates()
+    res = res.groupby(
+        "c1", sort=False
+    ).head(-1).groupby(
+        "c1", sort=False
+    ).tail(-1)
+    return res
 
 def domain_chipseq_df(dtree, loader, res1, res2, markers):
     d1df = []
@@ -128,28 +141,10 @@ def domain_chipseq_df(dtree, loader, res1, res2, markers):
     }, axis=1)[["c1", "s1", "e1"]]
     
     # Format res1 as bed
-    df2 = res1[["c2", "s2", "e2"]].copy()
-    df2.columns = ["c1", "s1", "e1"]
-    res1 = pd.concat([
-        res1[["c1", "s1", "e1"]], df2
-    ], axis=0).drop_duplicates()
-    res1 = res1.groupby(
-        "c1", sort=False
-    ).head(-1).groupby(
-        "c1", sort=False
-    ).tail(-1)
+    res1 = domain_output_to_boundary(res1)
     
     # Format res2 as bed
-    df2 = res2[["c2", "s2", "e2"]].copy()
-    df2.columns = ["c1", "s1", "e1"]
-    res2 = pd.concat([
-        res2[["c1", "s1", "e1"]], df2
-    ], axis=0).drop_duplicates()
-    res2 = res2.groupby(
-        "c1", sort=False
-    ).head(-1).groupby(
-        "c1", sort=False
-    ).tail(-1)
+    res2 = domain_output_to_boundary(res2)
     
     rows = []
     for label, df in zip(

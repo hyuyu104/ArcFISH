@@ -8,8 +8,11 @@ from anndata import AnnData, concat
 from scipy import stats
 from statsmodels.stats import multitest as multi
 
-from ..utils.eval import axis_weight, joint_filter_normalize
-
+from ..utils.eval import (
+    axis_weight, 
+    filter_normalize, 
+    joint_filter_normalize
+)
 
 class LoopTestAbstract(ABC):
     """Abstract class for each test alternative. Every testing object
@@ -261,6 +264,8 @@ class AxisWiseF(LoopTestAbstract):
     """
     def __init__(self, adata:AnnData):
         self._d1d = adata.var["Chrom_Start"].values
+        if "var_X" not in adata.varp:
+            filter_normalize(adata)
         val_cols = ["X", "Y", "Z"]
         self._var = np.stack([adata.varp[f"var_{c}"] for c in val_cols])
         self._count = np.stack([adata.varp[f"count_{c}"] for c in val_cols])

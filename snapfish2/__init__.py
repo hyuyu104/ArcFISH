@@ -28,6 +28,7 @@ class _settings:
         self.fontsize = 10
         self.plot_style = "seaborn-v0_8-paper"
         self.legend_frame = False
+        # self.dpi = 50
         
         plt.rcParams.update({
             "figure.constrained_layout.use": True,
@@ -39,6 +40,16 @@ class _settings:
             "axes.grid": True,
             "grid.color": ".8"
         })
+        
+    @property
+    def dpi(self):
+        return self._dpi
+    
+    @dpi.setter
+    def dpi(self, dpi:int):
+        plt.rcParams["figure.dpi"] = dpi
+        plt.rcParams["savefig.dpi"] = dpi
+        self._dpi = dpi
         
     @property
     def verbosity(self):

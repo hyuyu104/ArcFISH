@@ -12,7 +12,7 @@ from anndata import AnnData
 import dask.array as da
 import requests
 
-from ..utils.eval import axis_weight
+from ..utils.eval import axis_weight, filter_normalize
 from ..tools.func import overlap
 
 
@@ -25,12 +25,14 @@ class ABCaller:
         Minimum compartment size in bp.
     ref_genome : str, optional
         Reference genome assembly ID used to assign A/B compartment
-        based on clustering result. If None, use the average pairwise
-        distance to assign A/B compartment (smaller distance is A and 
-        larger distance is B). It is highly recommended to pass in a 
-        reference genome string, by default None.
+        based on clustering result, by default None. 
+        
+        If None, use the average pairwise distance to assign A/B 
+        compartment (smaller distance is A and larger distance is B). 
+        It is highly recommended to pass in a reference genome string.
+        
         See available assembly IDs at: 
-        https://genome.ucsc.edu/cgi-bin/hgGateway.
+        `UCSC Genome browser <https://genome.ucsc.edu/cgi-bin/hgGateway>`_.
         Common assembly IDs are: "hg19", "hg38", "mm10".
     cutoff: float, optional
         Required only if method is "pca".
@@ -129,6 +131,8 @@ class ABCaller:
             indicates A compartment and 1 indicates B compartment.
         """
         if self._method == "axes":
+            if "var_X" not in adata.varp:
+                filter_normalize(adata)
             return self.by_axes_pc(adata)
         if self._method == "pca":
             return self.by_first_pc(adata)
@@ -205,7 +209,7 @@ class ABCaller:
         )
         return result
         
-    def by_first_pc(self, adata:AnnData) -> dict:
+    def by_first_pc(self, adata:AnnData) -> pd.DataFrame:
         """Call A/B compartments by first PCA. Adopted from
         Su, J.-H., Zheng, P., Kinrot, S. S., Bintu, B. & Zhuang, X. 
         Genome-Scale Imaging of the 3D Organization and Transcriptional 

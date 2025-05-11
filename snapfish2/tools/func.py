@@ -7,14 +7,20 @@ from scipy.integrate import quad
 __all__ = [
     "overlap",
     "loop_overlap",
+    "signal_overlap",
     "all_possible_pairs",
     "sample_covar_ma"
 ]
 
-def overlap(ints1:np.ndarray, ints2:np.ndarray, offset:float=0) -> np.ndarray:
-    """Given two list of intervals, for each interval in the first list, check
-    if it overlaps with any interval from the second list. If `offset` is not 
-    0, overlap is defined as within `offset` length away from each other.
+def overlap(
+    ints1:np.ndarray, 
+    ints2:np.ndarray,
+    offset:float=0
+) -> np.ndarray:
+    """Given two list of intervals, for each interval in the first list, 
+    check if it overlaps with any interval from the second list. If 
+    `offset` is not 0, overlap is defined as within `offset` length away 
+    from each other.
 
     Parameters
     ----------
@@ -29,32 +35,31 @@ def overlap(ints1:np.ndarray, ints2:np.ndarray, offset:float=0) -> np.ndarray:
     Returns
     -------
     (n1) np.ndarray
-        Whether each interval in the first list overlaps with intervals from
-        the second list.
+        Whether each interval in the first list overlaps with intervals 
+        from the second list.
     """
     a = ints1[:,[1]] - ints2[:,0] < -offset
     b = ints2[:,1] - ints1[:,[0]] < -offset
     return np.any(~(a|b), axis=1)
 
 
-def loop_overlap(
-    test_df:pd.DataFrame|str, 
-    true_df:pd.DataFrame|str, 
+def signal_overlap(
+    test_df:pd.DataFrame|str,
+    true_df:pd.DataFrame|str,
     offset:float=0
 ) -> pd.DataFrame:
-    """For each locus pair (row) in `test_df`, return 3 if the locus pair also
-    presents in `true_df` (pair presents -> both loci overlapped); return 1 if 
-    one of the two loci presents in `true_df`; and return 2 if both loci 
-    present but they never present in the same row of `true_df`. If `offset` 
-    is not 0, overlap is defined as within `offset` away from each other.
+    """For each locus in `test_df`, return 1 if the locus is also 
+    present in `true_df`; return 0 if the locus is not present in
+    `true_df`. If `offset` is not 0, overlap is defined as within 
+    `offset` away from each other.
 
     Parameters
     ----------
     test_df : pd.DataFrame | str
-        If a DataFrame, must has "c1", "s1", "e1", "c2", "s2", "e2" as column
-        names. If a str, will read from the file named `test_df`. The file is
-        delimited by tab and either has the column names listed above or has 
-        no column names.
+        If a DataFrame, must has "c1", "s1", "e1" as column names. If a
+        str, will read from the file named `test_df`. The file is
+        delimited by tab and either has the column names listed above or
+        has no column names.
     true_df : pd.DataFrame | str
         Same format as `test_df`.
     offset : float, optional
@@ -63,8 +68,71 @@ def loop_overlap(
     Returns
     -------
     pd.DataFrame
-        Same format and length as `test_df`, with an additional `overlapped` 
-        column.
+        Same format and length as `test_df`, with an additional 
+        `overlapped` column.
+    """
+    cols = ["c1", "s1", "e1"]
+    
+    if isinstance(test_df, str):
+        p1 = test_df
+        test_df = pd.read_csv(test_df, sep="\t")
+        if test_df.columns[0] != cols[0]:
+            test_df = pd.read_csv(p1, sep="\t", header=None)
+            test_df.columns = cols + test_df.columns[len(cols):].tolist()
+    assert np.all(test_df["s1"] - test_df["e1"] <= 0), \
+        "Locus 1 should precede locus 2"
+        
+    if isinstance(true_df, str):
+        p2 = true_df
+        true_df = pd.read_csv(true_df, sep="\t")
+        if true_df.columns[0] != cols[0]:
+            true_df = pd.read_csv(p2, sep="\t", header=None)
+            true_df.columns = cols + true_df.columns[len(cols):].tolist()
+    assert np.all(true_df["s1"] - true_df["e1"] <= 0), \
+        "Locus 1 should precede locus 2"
+        
+    out_df = []
+    for c, tdf in test_df.groupby("c1", sort=False):
+        vdf = true_df[true_df["c1"]==c]
+        a = tdf["s1"].values[:,None] - vdf["e1"].values > offset
+        b = vdf["s1"].values[:,None] - tdf["e1"].values > offset
+        odf = tdf.copy()[cols]
+        odf["overlapped"] = (~(a|b.T)).any(axis=1).astype("int")
+        out_df.append(odf)
+    if len(out_df) != 0:
+        return pd.concat(out_df)
+    return pd.DataFrame(columns=test_df.columns.tolist() + ["overlapped"])
+
+
+def loop_overlap(
+    test_df:pd.DataFrame|str, 
+    true_df:pd.DataFrame|str, 
+    offset:float=0
+) -> pd.DataFrame:
+    """For each locus pair (row) in `test_df`, return 3 if the locus 
+    air also presents in `true_df` (pair presents -> both loci 
+    overlapped); return 1 if one of the two loci presents in `true_df`; 
+    and return 2 if both loci present but they never present in the same 
+    row of `true_df`. If `offset` is not 0, overlap is defined as within 
+    `offset` away from each other.
+
+    Parameters
+    ----------
+    test_df : pd.DataFrame | str
+        If a DataFrame, must has "c1", "s1", "e1", "c2", "s2", "e2" as 
+        column names. If a str, will read from the file named `test_df`. 
+        The file is delimited by tab and either has the column names 
+        listed above or has no column names.
+    true_df : pd.DataFrame | str
+        Same format as `test_df`.
+    offset : float, optional
+        How to define overlapped intervals, by default 0.
+
+    Returns
+    -------
+    pd.DataFrame
+        Same format and length as `test_df`, with an additional 
+        `overlapped` column.
     """
     cols = ["c1", "s1", "e1", "c2", "s2", "e2"]
     

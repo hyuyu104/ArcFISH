@@ -1,5 +1,6 @@
 import csv
 from pathlib import Path
+import warnings
 import numpy as np
 import pandas as pd
 from anndata import AnnData
@@ -197,7 +198,21 @@ class FOF_CT_Loader:
             for row in reader:
                 if str(row[chr_idx]) == chr_id:
                     rows.append(row)
-        df = pd.DataFrame(rows, columns=info["columns"])
+        df = pd.DataFrame(rows)
+        if df.shape[1] == len(info["columns"]):
+            df.columns = info["columns"]
+        elif df.shape[1] < len(info["columns"]):
+            # Some columns are missing
+            df.columns = info["columns"][:df.shape[1]]
+            warnings.warn(
+                "FOF_CT-core data has less columns than what specified " + \
+                "in the header. Additional columns will be ignored."
+            )
+        else:
+            raise ValueError(
+                "FOF_CT-core data has more columns than what specified " + \
+                "in the header. Please check the original FOF_CT-core file."
+            )
         # csv reads NaN as ""
         df = df.replace("", np.nan)
         

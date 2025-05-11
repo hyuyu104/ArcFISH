@@ -54,7 +54,8 @@ def _normalized_dask_arr(adata:AnnData, arr:da.Array) -> da.Array:
     mean_by1d = np.zeros_like(wt_entry_mean, dtype="float64")
     for dd in np.unique(d1map[d1map>0]):
         idx = np.where(d1map==dd)
-        mean_by1d[:,*idx] = np.sum(wt_entry_mean[:,*idx], axis=1)[:,None]
+        # nansum for cases where entire entry is NaN
+        mean_by1d[:,*idx] = np.nansum(wt_entry_mean[:,*idx], axis=1)[:,None]
     mean_by1d = mean_by1d + mean_by1d.transpose((0,2,1))
 
     wt_entry_var = da.nanmean(
@@ -63,8 +64,9 @@ def _normalized_dask_arr(adata:AnnData, arr:da.Array) -> da.Array:
     std_by1d = np.zeros_like(wt_entry_var, dtype="float64")
     for dd in np.unique(d1map[d1map>0]):
         idx = np.where(d1map==dd)
+        # nansum for cases where entire entry is NaN
         std_by1d[:,*idx] = np.sqrt(
-            np.sum(wt_entry_var[:,*idx], axis=1)    
+            np.nansum(wt_entry_var[:,*idx], axis=1)    
         )[:,None]
     std_by1d = std_by1d + std_by1d.transpose((0,2,1))
     std_by1d[:,*np.diag_indices(std_by1d.shape[2])] = 1

@@ -173,7 +173,7 @@ def cpmt_enrichment(
     d1df = d1df[["Chrom", "Chrom_Start", "Chrom_End"]]
     for marker in dtree[chipseq]:
         chip_df = pd.read_csv(
-            dtree[chipseq,marker], sep="\t", 
+            dtree[chipseq,marker,"peak"], sep="\t", 
             header=None, usecols=[0, 1, 2]
         )
         chip_df.columns = ["c1", "s1", "e1"]

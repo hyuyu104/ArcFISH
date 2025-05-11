@@ -361,11 +361,11 @@ if __name__ == "__main__":
     # download_all(args.datadir)
     # proc_chipseq_mesc(args.datadir)
     # proc_chiapet_mesc(args.datadir)
-    proc_fithic_mesc(args.datadir)
+    # proc_fithic_mesc(args.datadir)
     # proc_su_cell_2020(args.datadir)
     
-    # data_dire = "data"
-    # with open(os.path.join(data_dire, "data.json"), "r") as f:
-    #     data_tree = json.load(f)
-    # key = "chipseq_mesc"
-    # download_folder(key, data_tree[key], data_dire)
+    data_dire = "data"
+    with open(os.path.join(data_dire, "data.json"), "r") as f:
+        data_tree = json.load(f)
+    key = "bonev_cell_2017"
+    download_folder(key, data_tree[key], data_dire)

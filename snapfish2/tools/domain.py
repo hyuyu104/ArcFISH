@@ -11,6 +11,7 @@ from .loop import DiffLoop
 from ..utils.eval import (
     axis_weight, 
     median_pdist, 
+    filter_normalize,
     joint_filter_normalize
 )
 
@@ -114,6 +115,8 @@ class TADCaller:
             column `peak` defines whether the position is a boundary.
         """
         if self._method == "pval":
+            if "var_X" not in adata.varp:
+                filter_normalize(adata)
             return self.by_pval(adata)
         if self._method == "insulation":
             return self.by_insulation(adata)
@@ -161,14 +164,14 @@ class TADCaller:
             intra_count = np.hstack([lcount, rcount]).sum(axis=1)
             lvar = entry_var[:,ls,ls][:,*np.triu_indices(i-left,1)]
             rvar = entry_var[:,rs,rs][:,*np.triu_indices(right-i,1)]
-            var_nume = np.hstack([
+            var_nume = np.nansum(np.hstack([
                 lvar*(lcount/intra_count[:,None]),
                 rvar*(rcount/intra_count[:,None])
-            ]).sum(axis=1)
+            ]), axis=1)
 
             inter_count = np.sum(count[:,ls,rs], axis=(1,2))
             wts = count[:,ls,rs]/inter_count[:,None,None]
-            var_deno = np.sum(entry_var[:,ls,rs]*wts, axis=(1,2))
+            var_deno = np.nansum(entry_var[:,ls,rs]*wts, axis=(1,2))
 
             f_stats = var_nume/var_deno
             f_pvals = stats.f.cdf(f_stats, intra_count, inter_count)
