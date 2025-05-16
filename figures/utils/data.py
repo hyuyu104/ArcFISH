@@ -355,9 +355,9 @@ def create_parser():
         
         
 if __name__ == "__main__":
-    parser = create_parser()
-    args = parser.parse_args()
-    HOMEDIRE = args.keydir
+    # parser = create_parser()
+    # args = parser.parse_args()
+    # HOMEDIRE = args.keydir
     # download_all(args.datadir)
     # proc_chipseq_mesc(args.datadir)
     # proc_chiapet_mesc(args.datadir)
@@ -367,5 +367,5 @@ if __name__ == "__main__":
     data_dire = "data"
     with open(os.path.join(data_dire, "data.json"), "r") as f:
         data_tree = json.load(f)
-    key = "bonev_cell_2017"
+    key = "rao_cell_2014"
     download_folder(key, data_tree[key], data_dire)

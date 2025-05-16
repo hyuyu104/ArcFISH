@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.patheffects as pe
 import matplotlib.colors as mcolors
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_divider
 from matplotlib.typing import ColorType
 from anndata import AnnData
 
@@ -383,7 +383,7 @@ def triangle_domain_boundary(
     adata:AnnData,
     caller:TADCaller,
     fig:plt.Figure|None=None,
-    cut_hi:float|None=None,
+    cut_hi:float|None=1e6,
     **kwargs
 ):
     if fig is None:
@@ -485,7 +485,8 @@ def cpmt_bars(
     ax:plt.Axes,
     size:str="5%",
     ca:ColorType=sns.palettes.color_palette("dark")[1],
-    cb:ColorType=sns.palettes.color_palette("dark")[0]
+    cb:ColorType=sns.palettes.color_palette("dark")[0],
+    ax_divider:axes_divider.AxesDivider|None=None,
 ):
     """Add A/B compartment assignments to a heatmap.
 
@@ -504,8 +505,11 @@ def cpmt_bars(
     cb : ColorType, optional
         Color of B compartments, by default
         `sns.palettes.color_palette("dark")[0]`.
+    ax_divider : None | axes_divider.AxesDivider, optional
+        Axes divider, by default None. If None, create a new one.
     """
-    ax_divider = make_axes_locatable(ax)
+    if ax_divider is None:
+        ax_divider = make_axes_locatable(ax)
     ax.spines[["left", "bottom", "right","top"]].set_visible(True)
 
     cax1 = ax_divider.append_axes("left", size=size, pad="0%", sharey=ax)
@@ -537,18 +541,18 @@ def cpmt_vals(cpmt_arr:np.ndarray, ax:plt.Axes=None) -> plt.Axes:
     if ax is None:
         fig, ax = plt.subplots(figsize=(7, 1))
     df = pd.DataFrame({"s1":np.arange(len(cpmt_arr)), "val":cpmt_arr})
-    sns.lineplot(df, x="s1", y="val", color="y", ax=ax)
+    sns.lineplot(df, x="s1", y="val", color="k", ax=ax)
     ax.spines["bottom"].set_visible(False)
     xmin, xmax = ax.get_xlim()
     ax.hlines([0], xmin=xmin, xmax=xmax, color="k", alpha=0.5)
     ax.set(xlim=(xmin, xmax), xticks=[])
     ax.fill_between(
         df["s1"], df["val"], 0, where=df["val"]>=0,
-        alpha=0.5, color="r"
+        alpha=1, color=plt.colormaps.get_cmap("RdBu")(20)
     )
     ax.fill_between(
         df["s1"], df["val"], 0, where=df["val"]<=0,
-        alpha=0.5, color="b"
+        alpha=1, color=plt.colormaps.get_cmap("RdBu")(230)
     )
     ax.grid(False)
     return ax

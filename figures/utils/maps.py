@@ -201,7 +201,7 @@ def cpmt_enrichment(
     plt_df = pd.concat([summ1.T, summ2.T], axis=1)
     plt_df.columns = [f"{name1} A", f"{name1} B", f"{name2} A", f"{name2} B"]
     plt_df = plt_df[[f"{name1} A", f"{name2} A", f"{name1} B", f"{name2} B"]]
-    fig, axes = plt.subplots(1, 3, figsize=(len(up_rglt+down_rglt)*3/4,3), 
+    fig, axes = plt.subplots(1, 3, figsize=(len(up_rglt+down_rglt)*3/3.6,3), 
                              width_ratios=[len(up_rglt),len(down_rglt),.2])
     sns.heatmap(plt_df.T[up_rglt], vmin=-1, vmax=1, annot=True, square=True,
                 cmap="coolwarm", cbar=False, ax=axes[0])
@@ -212,3 +212,13 @@ def cpmt_enrichment(
     axes[1].set(title="Inactive")
     axes[1].grid(False)
     return fig
+
+
+def permute_cpmt_heatmap(cpmt_arr, adata, ax):
+    idx = np.arange(len(cpmt_arr), dtype="int64")
+    idx = np.concatenate([idx[cpmt_arr==0], idx[cpmt_arr==1]])
+    perm_cpmt = np.concatenate([cpmt_arr[cpmt_arr==0], cpmt_arr[cpmt_arr==1]])
+    sf.pl.pairwise_heatmap(adata.varp["var_Z"][idx][:,idx], ax=ax, 
+                           vmax=2, rasterized=True)
+    sf.pl.cpmt_bars(perm_cpmt, ax=ax)
+    ax.set_title("Z-Axis Permuted")

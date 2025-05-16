@@ -178,14 +178,18 @@ class TADCaller:
             
             act_stat = np.sum(weights*np.tan((0.5 - f_pvals)*np.pi))
             p_val_act = 1 - stats.cauchy.cdf(act_stat)
+            
+            f_pvals_prox = stats.f.cdf(f_stats, 1, 1)
+            act_stat_prox = np.sum(weights*np.tan((0.5 - f_pvals_prox)*np.pi))
+            
             rows.append([
-                d1d[i], d1de[i], *f_stats, 
-                *f_pvals, act_stat, p_val_act
+                d1d[i], d1de[i], *f_stats, *f_pvals, 
+                act_stat, act_stat_prox, p_val_act
             ])
             
         result = pd.DataFrame(rows, columns=[
             "Chrom_Start", "Chrom_End", "stat_x", "stat_y", "stat_z",
-            "pval_x", "pval_y", "pval_z", "stat", "pval"
+            "pval_x", "pval_y", "pval_z", "stat", "stat_prox", "pval"
         ])
         
         fdr_arr = result["pval"].copy()
@@ -197,7 +201,7 @@ class TADCaller:
         result["fdr_peak"] = result["fdr"] < self._fdr_cutoff
         
         result["raw_peak"] = False
-        result.loc[find_peaks(result.stat.values)[0],"raw_peak"] = True
+        result.loc[find_peaks(result.stat_prox.values)[0],"raw_peak"] = True
         result["peak"] = result["raw_peak"]&result["fdr_peak"]
         
         result["c1"] = adata.uns["Chrom"]

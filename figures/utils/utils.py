@@ -96,9 +96,9 @@ def chiapet_sub_df(
     return sub_df
 
 
-def _domain_chipseq_row(dtree, marker, boundaries):
+def _domain_chipseq_row(dtree, marker, boundaries, dire="chipseq_mesc"):
     true_df = pd.read_csv(
-        dtree["chipseq_mesc", marker, "peak"], sep="\t", header=None,
+        dtree[dire, marker, "peak"], sep="\t", header=None,
         usecols=[0, 1, 2], names=["c1", "s1", "e1"]
     )
 
@@ -130,7 +130,7 @@ def domain_output_to_boundary(res):
     ).tail(-1)
     return res
 
-def domain_chipseq_df(dtree, loader, res1, res2, markers):
+def domain_chipseq_df(dtree, loader, res1, res2, markers, dire="chipseq_mesc"):
     d1df = []
     for chr_id in loader.chr_ids:
         df = loader.create_adata(chr_id).var
@@ -152,7 +152,7 @@ def domain_chipseq_df(dtree, loader, res1, res2, markers):
         [d1df, res1, res2]
     ):
         for marker in markers:
-            row = _domain_chipseq_row(dtree, marker, df)
+            row = _domain_chipseq_row(dtree, marker, df, dire=dire)
             row["Method"] = label
             rows.append(row)
     return pd.DataFrame(rows)
