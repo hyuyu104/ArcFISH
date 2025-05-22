@@ -99,6 +99,7 @@ class _settings:
     def fontsize(self, ftsize:int):
         plt.rcParams["font.size"] = ftsize
         plt.rcParams["legend.fontsize"] = ftsize*.8
+        plt.rcParams["legend.title_fontsize"] = ftsize*.8
         plt.rcParams["axes.titlesize"] = ftsize
         plt.rcParams["axes.labelsize"] = ftsize
         

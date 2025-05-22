@@ -1,9 +1,27 @@
 from pathlib import Path
 import numpy as np
 import pandas as pd
-from sklearn.metrics import roc_curve
+from sklearn.metrics import roc_curve, precision_recall_curve
 
 import snapfish2 as sf
+
+
+def filter_loops(df, loader):
+    all_pairs = sf.tl.all_possible_pairs(loader)
+    # -10 enforces bins to overlap instead of neiboring each others
+    filtered_df = sf.tl.loop_overlap(all_pairs, df, -10)
+    # Keep loops overlapped
+    filtered_df = filtered_df[filtered_df.overlapped == 3]
+    # Keep only cis loops
+    filtered_df = filtered_df[filtered_df["c1"] == filtered_df["c2"]]
+    # Filter out X, Y chromosomes
+    filtered_df = filtered_df[~filtered_df["c1"].isin(["chrX", "chrY"])]
+    # Keep only loops with length 100 Kb to 1 Mb
+    filtered_df = filtered_df[
+        (filtered_df["s2"] - filtered_df["s1"] >= 100000) &
+        (filtered_df["s2"] - filtered_df["s1"] <= 1000000)
+    ].reset_index(drop=True)
+    return filtered_df
 
 
 def to_loop_roc_df(r1, r2, true_path):
@@ -20,6 +38,20 @@ def to_loop_roc_df(r1, r2, true_path):
     rr["loop"] = true_df[ff]["loop"].astype("int")
     # print(f"Total # of loops: {np.sum(rr["loop"])}")
     return rr
+
+
+def precision_recall_res(res, true_df):
+    res_df = res[res["summit"]].copy()
+    res_df["overlapped"] = sf.tl.loop_overlap(
+        res_df, true_df, offset=-1
+    )["overlapped"]
+    df = pd.DataFrame(np.stack(precision_recall_curve(
+        res_df["overlapped"]==3, -res_df["pval"]
+    )[:2]).T, columns=["Precisoin", "# True Loops"])
+    # Display the actual number of overlapped loops
+    df["# True Loops"] *= np.sum(res_df["overlapped"]==3)
+    df["# True Loops"] = df["# True Loops"].astype("int")
+    return df
 
 
 def tad_enrichment_row(tad_df, chip_df, col="default"):

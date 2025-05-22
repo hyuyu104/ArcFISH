@@ -88,7 +88,7 @@ def precision_recall_loop(res1, res2, true_df, ax):
     for i, res_sf in enumerate([res1, res2]):
         res_df = res_sf[res_sf["summit"]].copy()
         res_df["overlapped"] = sf.tl.loop_overlap(
-            res_df, true_df, offset=25e3
+            res_df, true_df, offset=-1
         )["overlapped"]
         df = pd.DataFrame(np.stack(precision_recall_curve(
             res_df["overlapped"]==3, -res_df["pval"]
@@ -108,7 +108,7 @@ def precision_recall_loop(res1, res2, true_df, ax):
 
     res_df = res2[res2["summit"]].copy()
     res_df["overlapped"] = sf.tl.loop_overlap(
-        res_df, true_df, offset=25e3
+        res_df, true_df, offset=-1
     )["overlapped"]
     pt_df = []
     for cut in [1e-3, 1e-4, 1e-5, 1e-6]:

@@ -3,6 +3,7 @@ from itertools import combinations
 import numpy as np
 import pandas as pd
 from scipy.integrate import quad
+from .. import utils as pp
 
 __all__ = [
     "overlap",
@@ -142,6 +143,9 @@ def loop_overlap(
         if test_df.columns[0] != cols[0]:
             test_df = pd.read_csv(p1, sep="\t", header=None)
             test_df.columns = cols + test_df.columns[len(cols):].tolist()
+    if np.any([c not in test_df.columns for c in cols]):
+        test_df = test_df.iloc[:,:6].copy()
+        test_df.columns = cols
     assert np.all(test_df["s2"] - test_df["s1"] >= 0), \
         "Locus 1 should precede locus 2"
     
@@ -151,6 +155,9 @@ def loop_overlap(
         if true_df.columns[0] != cols[0]:
             true_df = pd.read_csv(p2, sep="\t", header=None)
             true_df.columns = cols + true_df.columns[len(cols):].tolist()
+    if np.any([c not in true_df.columns for c in cols]):
+        true_df = true_df.iloc[:,:6].copy()
+        true_df.columns = cols
     assert np.all(true_df["s2"] - true_df["s1"] >= 0), \
         "Locus 1 should precede locus 2"
     
@@ -174,7 +181,22 @@ def loop_overlap(
     return pd.DataFrame(columns=test_df.columns.tolist() + ["overlapped"])
 
 
-def all_possible_pairs(d1df:pd.DataFrame):
+def all_possible_pairs(d1df:pd.DataFrame|pp.FOF_CT_Loader) -> pd.DataFrame:
+    if isinstance(d1df, pp.FOF_CT_Loader):
+        data = d1df.read_data()
+        if isinstance(data, dict):
+            data = pd.concat(data.values(), ignore_index=True)
+        elif isinstance(data, list):
+            data = pd.concat(data, ignore_index=True)
+        d1df = []
+        for c, df in data.groupby("Chrom", sort=False):
+            d1df.append(df.sort_values("Chrom_Start")[
+                ["Chrom", "Chrom_Start", "Chrom_End"]
+            ].drop_duplicates())
+        d1df = pd.concat(d1df, ignore_index=True)
+    elif isinstance(d1df, pd.DataFrame):
+        d1df = d1df.iloc[:,:3].drop_duplicates()
+        d1df.columns = ["Chrom", "Chrom_Start", "Chrom_End"]
     all_df = []
     for c, df in d1df.groupby("Chrom", sort=False):
         comb_obj = combinations((df[["Chrom_Start", "Chrom_End"]].values), 2)
