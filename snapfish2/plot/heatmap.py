@@ -69,7 +69,7 @@ def pairwise_heatmap(
     
     
 def background_model(
-    i:int, j:int, 
+    i:int, j:int, outer_cut:int,
     TestClass:LoopTestAbstract,
     bin:int|np.ndarray, 
     num_bins:int=50,
@@ -103,7 +103,7 @@ def background_model(
         d1d = bin
     else:
         d1d = np.arange(num_bins, dtype="int64") * int(bin)
-    bkgd = TestClass.ij_background(i, j, d1d).astype("float")
+    bkgd = TestClass.ij_background(i, j, d1d, outer_cut).astype("float")
     bkgd[i, j] = 0.5
     ax = sns.heatmap(
         bkgd,

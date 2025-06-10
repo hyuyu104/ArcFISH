@@ -313,6 +313,9 @@ class AxisWiseF(LoopTestAbstract):
         b = (np.abs(d1d-d1d[j])<=25e3).astype("int")
         kept[(a[:,None]+b[None,:])==2] = False
         
+        # Exclude the row and column
+        kept[i,:] = kept[:,j] = False
+        
         kept[np.tril_indices_from(kept)] = False
         return kept
         
@@ -347,7 +350,7 @@ class AxisWiseF(LoopTestAbstract):
 
         for i, j in zip(*np.where((d1map>=cut_lo)&(d1map<=cut_up))):
             bkgd_map = self.ij_background(i, j, self._d1d, outer_cut)
-            if np.sum(bkgd_map) == 0:
+            if np.sum(bkgd_map) <= 3:
                 continue
             
             num_unloop = np.sum(self._count[:,bkgd_map], axis=1)

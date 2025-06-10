@@ -40,10 +40,10 @@ def to_loop_roc_df(r1, r2, true_path):
     return rr
 
 
-def precision_recall_res(res, true_df):
+def precision_recall_res(res, true_df, offset=-1):
     res_df = res[res["summit"]].copy()
     res_df["overlapped"] = sf.tl.loop_overlap(
-        res_df, true_df, offset=-1
+        res_df, true_df, offset=offset
     )["overlapped"]
     df = pd.DataFrame(np.stack(precision_recall_curve(
         res_df["overlapped"]==3, -res_df["pval"]
