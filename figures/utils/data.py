@@ -367,5 +367,5 @@ if __name__ == "__main__":
     data_dire = "data"
     with open(os.path.join(data_dire, "data.json"), "r") as f:
         data_tree = json.load(f)
-    key = "rao_cell_2014"
+    key = "hung_ng_2024"
     download_folder(key, data_tree[key], data_dire)

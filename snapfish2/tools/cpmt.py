@@ -57,6 +57,13 @@ class ABCaller:
         self._sigma = sigma
         self._method = method
         
+    @property
+    def tss(self) -> pd.DataFrame|None:
+        """Transcript start sites (TSS) of the reference genome."""
+        if hasattr(self, "_tss"):
+            return self._tss
+        return None
+        
     def _ref_genome_parser(self, ref_genome:str|None) -> str:
         """Add transcript start sites as `self._tss ` """
         if ref_genome is None:

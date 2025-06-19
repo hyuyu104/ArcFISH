@@ -222,3 +222,52 @@ def permute_cpmt_heatmap(cpmt_arr, adata, ax):
                            vmax=2, rasterized=True)
     sf.pl.cpmt_bars(perm_cpmt, ax=ax)
     ax.set_title("Z-Axis Permuted")
+    
+    
+def triangle_boundary_count(sf2_fish_df, adata, caller2, fig):
+    df = sf2_fish_df[sf2_fish_df["c1"]==adata.uns["Chrom"]].copy()
+    ax, cbar, cax = sf.pl.triangle_domain_boundary(
+        adata, caller2, fig=fig, cut_hi=1.2e6
+    )
+    cax.clear()
+
+    df1d = adata.var.copy()
+    d1d = ((df1d["Chrom_End"] + df1d["Chrom_Start"])/2).values
+    x, y = np.meshgrid(d1d, d1d)
+    med_df = sf.pl.rotate_df(pd.DataFrame({
+        "x": x[np.tril_indices_from(x, 0)], 
+        "y": y[np.tril_indices_from(y, 0)],
+    }), -45).drop_duplicates("x")
+    df["x"] = (df["e1"] + df["s1"])/2
+    df = pd.merge(df, med_df[["x", "x_rot"]], on="x")
+    df = df.sort_values("x").iloc[1:-1]
+
+    sns.scatterplot(df, x="x_rot", y="Trace_ID", color="y", ax=cax)
+    cax.vlines(df.x_rot, ymin=0, ymax=df["Trace_ID"], color="y")
+    cax.yaxis.set_inverted(True)
+
+    res = caller2.call_tads(adata)
+    res["x"] = (res["Chrom_End"] + res["Chrom_Start"])/2
+    res = pd.merge(res[res.peak], df, on="x", how="left")
+    for i, row in res.iterrows():
+        cax.axvline(row.x_rot, ymax=1, ymin=.97,
+                    linestyle="-", color="k", clip_on=False)
+    sns.scatterplot(res, x="x_rot", y="Trace_ID", color="k", ax=cax)
+    cax.vlines(res.x_rot, ymin=0, ymax=res["Trace_ID"], color="k")
+
+    cax.grid(False)
+    cax.set_xlim(*ax.get_xlim())
+
+    cax.set(
+        xlabel="Genomic Position (bp)",
+        xticks=[med_df["x_rot"].min(), med_df["x_rot"].max()],
+        xticklabels=[
+            f"{df1d["Chrom_Start"].min()/1e6:.3f}Mb", 
+            f"{df1d["Chrom_End"].max()/1e6:.3f}Mb"
+        ],
+        ylabel="FISHnet Count"
+    )
+    cax.xaxis.set_label_coords(.5, -0.15)
+    
+    cbar.set_label("Pairwise Distance (nm)", labelpad=-50)
+    return ax

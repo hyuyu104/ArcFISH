@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
+from matplotlib.patches import Patch
 import matplotlib.cm as cm
 import matplotlib.patheffects as pe
 import matplotlib.colors as mcolors
@@ -104,15 +105,26 @@ def background_model(
     else:
         d1d = np.arange(num_bins, dtype="int64") * int(bin)
     bkgd = TestClass.ij_background(i, j, d1d, outer_cut).astype("float")
-    bkgd[i, j] = 0.5
+    bkgd[i, j] = 2
+    np.fill_diagonal(bkgd, 3)
+    c = [plt.colormaps["RdBu"](100), plt.colormaps["RdBu"](10)]
     ax = sns.heatmap(
         bkgd,
         square=True,
         xticklabels=False,
         yticklabels=False,
         cbar=False,
+        cmap=mcolors.ListedColormap(["black", c[0], c[1], "dimgray"]),
         ax=ax
     )
+    legend = ax.legend(
+        handles=[
+            Patch(facecolor=c[1], label="Testing Entry"),
+            Patch(facecolor=c[0], label="Local Background"),
+        ], loc="lower left"
+    )
+    for text in legend.get_texts():
+        text.set_color("white")
     return ax
 
 
@@ -126,6 +138,8 @@ def triangle_heatmap(
     width:float=3,
     height:None|float=None,
     alpha:float=0.8,
+    marker:str="d",
+    s:float=None,
     xticklabels:None|list[str]=None
 ) -> Tuple[plt.Figure, plt.Axes, plt.Axes]:
     """Plot a heatmap in the upper right triangle of a 2D matrix.
@@ -163,6 +177,10 @@ def triangle_heatmap(
         Width of the figure, by default 3.
     height : None | float, optional
         Height of the figure, by default None.
+    marker : str, optional
+        Marker to use for the scatter plot, by default "d".
+    s : float, optional
+        Size of the marker, by default None. If None, set to `width*15`.
     alpha : float, optional
         Transparency of pixels, by default 0.8.
     xticklabels : None | list[str], optional
@@ -192,10 +210,11 @@ def triangle_heatmap(
         fig, ax = plt.subplots(figsize=(width, width/2*frac))
     else:
         fig, ax = plt.subplots(figsize=(width, height))
-        
+    
+    s = width*15 if s is None else s
     sns.scatterplot(
         med_df, x="x_rot", y="y_rot", hue="dist", alpha=alpha, ax=ax, 
-        marker="d", palette=cmap, hue_norm=hue_norm, linewidth=0, s=width*15
+        marker=marker, palette=cmap, hue_norm=hue_norm, linewidth=0, s=s
     )
     ax.spines[["left", "right", "top"]].set_visible(False)
     ax.set(
@@ -230,6 +249,7 @@ def triangle_heatmap(
 
 def compare_loops(
     df1:pd.DataFrame, df2:pd.DataFrame, 
+    adata:AnnData|None=None,
     chr_id:str|None=None,
     map1:str="", map2:str="",
     c1:str="r", c2:str="b",
@@ -246,6 +266,8 @@ def compare_loops(
     df2 : pd.DataFrame
         The second list of loops to plot on the lower left triangle. 
         Must contain "c1", "s1", "e1", "c2", "s2", "e2" as columns.
+    adata : AnnData, optional
+        Plot the median pairwise distance from `adata` if provided.
     chr_id : str, optional
         Chromosome ID, by default None.
     map1 : str
@@ -305,14 +327,12 @@ def compare_loops(
     fontsize = ax.xaxis.label.get_size()
     (x1, x2), (y1, y2) = ax.get_xlim(), ax.get_ylim()
     ax.text(
-        x1 + 0.03*(x2-x1), y1 + 0.03*(y2-y1), map2, fontsize=fontsize,
-        verticalalignment="bottom", horizontalalignment="left",
-        path_effects=[pe.withStroke(linewidth=.5, foreground="white")]
+        x1 - 0.02*(x2-x1), y1 + 0.02*(y2-y1), map2, fontsize=fontsize,
+        va="bottom", ha="right", rotation=90,
     )
     ax.text(
-        x2 - 0.03*(x2-x1), y2 - 0.03*(y2-y1), map1, fontsize=fontsize,
-        verticalalignment="top", horizontalalignment="right",
-        path_effects=[pe.withStroke(linewidth=.5, foreground="white")]
+        x2 - 0.02*(x2-x1), y2 + 0.02*(y2-y1), map1, fontsize=fontsize,
+        va="bottom", ha="right", rotation=0
     )
     
     return ax

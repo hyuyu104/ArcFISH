@@ -1,11 +1,14 @@
 import warnings
+from typing import Literal
 from pathlib import Path
+from functools import reduce
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.gridspec import GridSpec
 import seaborn as sns
 from sklearn.metrics import precision_recall_curve
+import pyBigWig
 
 import snapfish2 as sf
 
@@ -151,3 +154,93 @@ def domain_chipseq_barplot(enrich_df, ax):
     ax.legend(handles=handles[:3], labels=labels, loc="best")
     ax.set(xlabel=None, ylim=(0,1), ylabel="Enrichment Boundary Fraction")
     ax.grid(False)
+    
+
+def prc_proportion(
+    ax, rows, p:Literal["precision", "recall"], palette,
+    bar_width=0.35, gap=0.07
+):
+    """Plot the proportion of precision or recall."""
+    avg_prc = rows.groupby(["method", "err"]).mean().reset_index()
+    methods = avg_prc["method"].unique()
+    err_vals = avg_prc["err"].unique()
+
+    for i, method in enumerate(methods):
+        data = avg_prc[avg_prc["method"] == method]
+        # Calculate positions for each bar
+        positions = np.arange(len(err_vals)) \
+            - (bar_width + gap)/2 + i*(bar_width + gap)
+        ax.bar(
+            positions,
+            data[p] / data[p].iloc[0],  # normalize if needed
+            width=bar_width,
+            label=method,
+            facecolor=palette[method],
+            edgecolor="k",
+            linewidth=1
+        )
+        # Add percent labels
+        for x, y in zip(positions, data[p] / data[p].iloc[0]):
+            ax.text(x, y + 0.01, f"{y*100:.0f}%", 
+                    ha="center", va="bottom", fontsize=10)
+
+    ax.set_xticks(np.arange(len(err_vals)))
+    ax.set_xticklabels(err_vals)
+    ax.legend(title="Method")
+    ax.set(xlabel="Z-Axis Additional Error (nm)", 
+           ylabel=f"{p.title()} Proportion")
+    ax.grid(False)
+    
+    
+def loop_stack_bar(fig, test_dfs):
+    loop_count = pd.concat([
+        test_df["count"].value_counts() for test_df in test_dfs
+    ], axis=1).fillna(0).astype(int)
+    loop_count.columns = ["SnapFISH", "SnapFISH2"]
+    loop_frac = loop_count / loop_count.sum(axis=0)
+    loop_frac = loop_frac.loc[np.arange(len(loop_frac), dtype=int)]
+
+    figs = fig.subfigures(2, 1, height_ratios=[1, .2])
+    axes = figs[0].subplots(2, 1, sharex=True)
+    loop_frac.T.iloc[:1].plot(kind="barh", stacked=True, linewidth=.5, edgecolor="k",
+                        colormap="Reds", width=0.2, ax=axes[0])
+    axes[0].grid(False)
+    lbls = [f"{t*100:.1f}%" for t in loop_frac["SnapFISH"]]
+    axes[0].legend(labels=lbls, loc="lower center", ncol=7)
+    bar = axes[0].patches[0]
+
+    loop_frac.T.iloc[1:].plot(kind="barh", stacked=True, linewidth=.5, edgecolor="k",
+                        colormap="Reds", width=0.2, ax=axes[1])
+    axes[1].grid(False)
+    lbls = [f"{t*100:.1f}%" for t in loop_frac["SnapFISH2"]]
+    axes[1].legend(labels=lbls, loc="lower center", ncol=7)
+    bar = axes[1].patches[0]
+
+    handles, labels = axes[1].get_legend_handles_labels()
+    figs[1].legend(handles, labels, loc="center", ncol=7, 
+                title="Overlaps with PLAC-seq (2), ChIA-PET (2), HiCExplorer, and FitHiC2")
+    
+    
+def boundary_mean_enrichment(wig_path, boundaries, loader, window=250e3):
+    d1df = sf.tl.all_possible_bins(loader)
+    d1df = d1df.copy()
+    with pyBigWig.open(wig_path) as bw:
+        for idx, row in d1df.iterrows():
+            bw_val = bw.values(row["c1"], row["s1"], row["e1"])
+            d1df.loc[idx, "v"] = np.sum(bw_val)
+    boundaries = boundaries.copy()
+    window_list = []
+    for idx, row in boundaries.iterrows():
+        sub_df = d1df[d1df["c1"]==row["c1"]].copy()
+        sub_df = sub_df.rename({"v": f"v_{idx}"}, axis=1)
+        sub_df["s1"] -= row["s1"]
+        sub_df["e1"] -= row["e1"]
+        window_list.append(sub_df[(sub_df["s1"] >= -window)&(sub_df["e1"] <= window)])
+        
+    merged_df = reduce(lambda left, right: pd.merge(
+        left, right.drop("c1", axis=1), on=['s1', 'e1'], how="outer"
+    ), window_list)
+    mean_enrichment = np.nanmean(merged_df.iloc[:,3:], axis=1)
+    df = pd.Series(mean_enrichment).to_frame("val")
+    df["1d"] = merged_df["s1"]
+    return df

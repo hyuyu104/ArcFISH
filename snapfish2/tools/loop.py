@@ -274,6 +274,10 @@ class AxisWiseF(LoopTestAbstract):
             axis_weight(adata)
         self._wt = np.array([adata.uns["weight"][c] for c in val_cols])
         
+        X = np.stack([adata.layers[c] for c in ["X", "Y", "Z"]])
+        arr = X[:,:,:,None] - X[:,:,None,:]
+        self._pdists = np.sqrt(np.sum(np.square(arr), axis=0))
+        
     @staticmethod
     def ij_background(
         i:int, 
@@ -355,7 +359,8 @@ class AxisWiseF(LoopTestAbstract):
             
             num_unloop = np.sum(self._count[:,bkgd_map], axis=1)
             wts = self._count[:,bkgd_map]/num_unloop[:,None]
-            denom = np.sum(wts*self._var[:,bkgd_map], axis=1)
+            # nansum to avoid completely missing pairs
+            denom = np.nansum(wts*self._var[:,bkgd_map], axis=1)
             
             f_stats = self._var[:,i,j]/denom
             result["axis_stat"][:,i,j] = result["axis_stat"][:,j,i] = f_stats
@@ -377,14 +382,31 @@ class AxisWiseF(LoopTestAbstract):
         result : dict
             The result dictionary to add summit.
         """
+        d1d, dmaps = self._d1d, self._pdists
+        d1sel = np.abs(d1d[:,None] - d1d[None,:])==25e3
+        if np.sum(d1sel) == 0:
+            freq_mat = np.ones((len(d1d), len(d1d)), dtype="float64")
+        else:
+            cutoff = np.nanmean(dmaps[:,d1sel])
+            warnings.filterwarnings("ignore", r".*invalid value")
+            freq_mat = np.sum(dmaps<cutoff, axis=0)/\
+                np.sum(~np.isnan(dmaps), axis=0)
+            
         labeled = result["label"]
         summit = np.zeros_like(labeled, dtype="bool")
+        
         for lab in np.unique(labeled[~np.isnan(labeled)]):
             # Keep only the triu part to compare p values
             idx = np.where(np.triu(labeled)==lab)
             max_i = np.argmin(result["pval"][idx])
+            
             i1, i2 = idx[0][max_i], idx[1][max_i]
-            summit[i1,i2] = summit[i2,i1] = True
+            if len(idx[0]) == 2:  # singleton (symmetric)
+                if freq_mat[i1,i2] > 1/2:
+                    summit[i1,i2] = summit[i2,i1] = True
+            elif freq_mat[i1,i2] > 1/3:
+                summit[i1,i2] = summit[i2,i1] = True
+        
         result["summit"] = summit
         
 

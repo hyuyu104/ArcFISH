@@ -10,6 +10,7 @@ __all__ = [
     "loop_overlap",
     "signal_overlap",
     "all_possible_pairs",
+    "all_possible_bins",
     "sample_covar_ma"
 ]
 
@@ -179,6 +180,37 @@ def loop_overlap(
     if len(odfs) != 0:
         return pd.concat(odfs)
     return pd.DataFrame(columns=test_df.columns.tolist() + ["overlapped"])
+
+
+def all_possible_bins(loader:pp.FOF_CT_Loader) -> pd.DataFrame:
+    """Get all possible bins from a FOF_CT_Loader object.
+
+    Parameters
+    ----------
+    loader : pp.FOF_CT_Loader
+        A FOF_CT_Loader object that contains the data.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame with columns "Chrom", "Chrom_Start", "Chrom_End" 
+        representing all possible bins.
+    """
+    data = loader.read_data()
+    if isinstance(data, dict):
+        data = pd.concat(data.values(), ignore_index=True)
+    elif isinstance(data, list):
+        data = pd.concat(data, ignore_index=True)
+        
+    data = data[["Chrom", "Chrom_Start", "Chrom_End"]].drop_duplicates()
+    all_df = []
+    for c, df in data.groupby("Chrom", sort=False):
+        all_df.append(df.sort_values("Chrom_Start"))
+    data = pd.concat(all_df, ignore_index=True)
+    data = data.rename({
+        "Chrom": "c1", "Chrom_Start": "s1", "Chrom_End": "e1"
+    }, axis=1)
+    return data
 
 
 def all_possible_pairs(d1df:pd.DataFrame|pp.FOF_CT_Loader) -> pd.DataFrame:
