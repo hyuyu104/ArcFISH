@@ -107,6 +107,9 @@ def call_cpmts(args):
     
     
 def diff_loops(args):
+    raise NotImplementedError(
+        "Differential loop calling is not implemented yet."
+    )
     loader1 = pp.FOF_CT_Loader(args.input1)
     loader2 = pp.FOF_CT_Loader(args.input2)
     loops = pd.read_csv(args.loops, sep="\t")
@@ -125,6 +128,9 @@ def diff_loops(args):
     
     
 def diff_domains(args):
+    raise NotImplementedError(
+        "Differential domains is not implemented yet."
+    )
     loader1 = pp.FOF_CT_Loader(args.input1)
     loader2 = pp.FOF_CT_Loader(args.input2)
     domains = pd.read_csv(args.domains, sep="\t")

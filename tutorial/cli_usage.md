@@ -1,6 +1,6 @@
 # SnapFISH2 as a command line tool
 
-Here we demonstrate how to use SnapFISH2 as a command line tool. Make sure `snapfish2` is successfully installed and activate the environment with SnapFISH2 in shell:
+Here we demonstrate how to use SnapFISH2 as a command line tool. Make sure `snapfish2` is successfully installed (see [installation](../install.md)) and activate the environment with SnapFISH2 in shell:
 ::::{tabs}
 :::{group-tab} conda
 ```sh
@@ -21,13 +21,11 @@ Version: ...
 :::
 ::::
 
-## Loop/domain/compartment calling
-
 Here we use the DNA seqFISH+ data from [Takei et al., 2021](https://www.science.org/doi/10.1126/science.abj1966) to call chromatin loops, TADs, and A/B compartments. The data can be downloaded from the 4DN data portal with ID: 4DNFIW4S8M6J (biological replicate 1), 4DNFI4LI6NNV (biological replicate 2), and 4DNFIDUJQDNO (biological replicate 3).
 
 Download the data and place them like the following:
 ```sh
-..
+.
 ├── data
 │   ├── takei_science_2021
 │   │   ├── 4DNFIW4S8M6J.csv
@@ -36,7 +34,7 @@ Download the data and place them like the following:
 ├── output
 ```
 
-### Preprocessing
+## Preprocessing
 
 First run the following to preprocess the data and store them as `AnnData` objects:
 ```sh
@@ -45,13 +43,13 @@ snapfish2 preprocess \
         rep2::data/takei_science_2021/4DNFI4LI6NNV.csv,\
         rep3::data/takei_science_2021/4DNFIDUJQDNO.csv" \
     -o pp_chr_adata \
-    -v X::103,Y::103,Z::250
+    -v X::1000,Y::1000,Z::1000
 ```
-The `-v` argument specifies how to convert the voxel coordinates to coordinates in nm. For Takei et al data, this ratio is 103 for X and Y axes and 250 for Z axis. `-v` can be omitted if the data in already in nm.
+The `-v` argument specifies how to convert the input data to `nm`. Since the 3D coordinates are stored as `µm`, we multiply each axis by 1000.
 
 This step creates a directory `pp_chr_adata` with a `.h5ad` file for each chromosome. The processed data will be used in all following steps.
 
-### Loop calling
+## Loop calling
 
 Once the processed data are stored in `pp_chr_adata`, loop calling can be done by
 ```sh
@@ -73,7 +71,7 @@ For example, to test loops with range from 10Kb to 2Mb, change the command to
 snapfish2 loop -i pp_chr_adata -o output/loop_res.bedpe -lo 10000 -up 1000000
 ```
 
-### Domain calling
+## Domain calling
 
 To call TADs, run the following
 ```sh
@@ -88,7 +86,7 @@ Additional optional arguments for TAD calling are:
 3. `tree`: whether to return hierarchical TADs, by default True.
 4. `min`: minimum TAD size, by default 0.
 
-### Compartment calling
+## Compartment calling
 
 To call A/B compartments, run the following
 ```sh
@@ -99,5 +97,3 @@ An optional `-min` argument can be passed in to specify the minimum A/B compartm
 ```{note}
 The compartment calling result here is not very meaningful as only a 1.5Mb (60 loci at 25Kb resolution) region is imaged on each chromosome. This is mainly to demonstrate the compartment calling workflow.
 ```
-
-## Differential loop/domain/compartment

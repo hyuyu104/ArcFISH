@@ -187,6 +187,8 @@ class ABCaller:
         med_sq = np.stack([
             adata.varp[f"var_{c}"] for c in ["X", "Y", "Z"]
         ])
+        didx = np.diag_indices_from(med_sq[0])
+        med_sq[:,*didx] = 0
         # Already normalized. 
         # Hollowed or not does not matter. Same eigenspace.
         V = np.linalg.eigh(np.exp(-med_sq))[1][:,:,-2]

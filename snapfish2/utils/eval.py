@@ -1,96 +1,92 @@
+import warnings
 import numpy as np
 from anndata import AnnData, concat
 import dask.array as da
 
 
-def _filter_pdiff(adata:AnnData, nstds:float) -> da.Array:
-    n = adata.shape[0]
-    # Size of n*d*c*c = 1GB
-    c = round(1 * (n * 3 * 8 / 1e9) ** -0.5)
-    
-    val_cols = ["X", "Y", "Z"]
-    X = da.from_array(np.stack([
-        adata.layers[c] for c in val_cols
-    ]), chunks=(3,n,c))
-    arr = X[:,:,:,None] - X[:,:,None,:]
-    
-    med_sq = da.nanmedian(da.square(arr), axis=1).compute()
-    for i, v in enumerate(val_cols):
-        adata.varp[f"raw_var_{v}"] = med_sq[i]
+def _local_linear_regression(
+    log_d1map:np.ndarray, 
+    xs:np.ndarray, 
+    ys:np.ndarray
+) -> np.ndarray:
+    """Local linear regression based on 10% data points."""
+    num_nbrs = len(xs) // 10
+    xi = np.array([1, 0, 0, 0])
+    strata_var = np.zeros((ys.shape[0], *log_d1map.shape))*np.nan
+    for x, c in zip(*np.unique(xs, return_counts=True)):
+        if c > num_nbrs:
+            Yi = np.nanmean(ys[:, xs==x], axis=1)
+        else:
+            diff = np.abs(xs - x)
+            r = np.sort(diff)[num_nbrs]/3
+            kept = diff <= 3*r
+            xr = xs[kept] - x
+            Xr = np.vstack([np.ones(len(xr)), xr, xr**2, xr**3]).T
+            Yr = ys[:, kept]
 
-    d1d = adata.var["Chrom_Start"].values
-    d1map = d1d[None,:] - d1d[:,None]
+            # Weight matrix (inverse of variance matrix in GLS)
+            W = np.exp(-np.square(xr/r)/2)
+            WX = W[:,None]*Xr
+            P = xi@np.linalg.pinv(WX.T@Xr)@WX.T
+            Yi = np.nansum(P[None,:]*Yr, axis=1)
+        strata_var[:, log_d1map==x] = np.exp(Yi[:,None])
+    return strata_var
 
-    med_stds = np.zeros_like(med_sq, dtype="float64")
-    for dd in np.unique(d1map[d1map>0]):
-        idx = np.where(d1map==dd)
-        med_std = np.nanmedian(med_sq[:,*idx], axis=1)**.5
-        med_stds[:,*idx] = med_std[:,None]
-    # Fill the lower triangle
-    med_stds = med_stds + med_stds.transpose((0,2,1))
-    med_stds = med_stds[:,None,:,:]
 
-    arr[da.abs(arr) > med_stds*nstds] = np.nan
-    return arr
-    
-    
-def _normalized_dask_arr(adata:AnnData, arr:da.Array) -> da.Array:
-    count = da.sum(~da.isnan(arr), axis=1).compute()
-    for i, c in enumerate(["X", "Y", "Z"]):
-        adata.varp[f"count_{c}"] = count[i]
-    
-    d1d = adata.var["Chrom_Start"].values
-    d1map = d1d[None,:] - d1d[:,None]
-
-    count_by1d = np.zeros_like(count, dtype="int64")
-    for dd in np.unique(d1map[d1map>0]):
-        idx = np.where(d1map==dd)
-        count_by1d[:,*idx] = np.sum(count[:,*idx], axis=1)[:,None]
-    count_by1d = count_by1d + count_by1d.transpose((0,2,1))
-    count_by1d[:,*np.diag_indices(count_by1d.shape[2])] = 1
-    wt = count/count_by1d
-
-    wt_entry_mean = da.nanmean(arr, axis=1).compute()*wt
-    mean_by1d = np.zeros_like(wt_entry_mean, dtype="float64")
-    for dd in np.unique(d1map[d1map>0]):
-        idx = np.where(d1map==dd)
-        # nansum for cases where entire entry is NaN
-        mean_by1d[:,*idx] = np.nansum(wt_entry_mean[:,*idx], axis=1)[:,None]
-    mean_by1d = mean_by1d + mean_by1d.transpose((0,2,1))
-
-    wt_entry_var = da.nanmean(
-        (arr-mean_by1d[:,None,:,:])**2, axis=1
-    ).compute()*wt
-    std_by1d = np.zeros_like(wt_entry_var, dtype="float64")
-    for dd in np.unique(d1map[d1map>0]):
-        idx = np.where(d1map==dd)
-        # nansum for cases where entire entry is NaN
-        std_by1d[:,*idx] = np.sqrt(
-            np.nansum(wt_entry_var[:,*idx], axis=1)    
-        )[:,None]
-    std_by1d = std_by1d + std_by1d.transpose((0,2,1))
-    std_by1d[:,*np.diag_indices(std_by1d.shape[2])] = 1
-    return arr/std_by1d[:,None,:,:]
-    
-    
-def _normalize_by1d(adata:AnnData, arr:da.Array):
-    var_norm = da.nanmean(da.square(
-        _normalized_dask_arr(adata, arr)
+def _filter_pdiff(adata:AnnData, arr:da.Array, log_d1map:np.ndarray):
+    """Filter outliers based on pairwise difference."""
+    raw_var = da.nanmedian(da.square(
+        arr - da.nanmedian(arr, axis=1, keepdims=True)
     ), axis=1).compute()
-    for i, c in enumerate(["X", "Y", "Z"]):
-        adata.varp[f"var_{c}"] = var_norm[i]
+    # 0 becomes -inf after taking log
+    raw_var[np.isclose(raw_var, 0)] = np.nan
+    
+    for i, v in enumerate("XYZ"):
+        adata.varp[f"raw_var_{v}"] = raw_var[i]
+        
+    uidx = np.triu_indices(log_d1map.shape[0], k=1)
+    raw_strata_var = _local_linear_regression(
+        log_d1map, log_d1map[uidx], np.log(raw_var[:,*uidx])
+    )
+    
+    strata_std = np.sqrt(raw_strata_var)[:,None,:,:]
+    arr[da.abs(
+        arr - da.nanmedian(arr, axis=1, keepdims=True)
+    ) > strata_std*4] = np.nan
+    
+    
+def _normalize_pdiff(adata:AnnData, arr:da.Array, log_d1map:np.ndarray):
+    """Normalize pairwise difference by 1D genomic distance."""
+    count = da.sum(~da.isnan(arr), axis=1).compute()
+    for i, c in enumerate("XYZ"):
+        adata.varp[f"count_{c}"] = count[i]
+
+    filtered_var = da.nanmean(da.square(
+        arr - da.nanmean(arr, axis=1, keepdims=True)
+    ), axis=1).compute()
+    filtered_var[np.isclose(filtered_var, 0)] = np.nan
+    
+    uidx = np.triu_indices(log_d1map.shape[0], k=1)
+    filtered_strata_var = _local_linear_regression(
+        log_d1map, log_d1map[uidx], np.log(filtered_var[:,*uidx])
+    )
+    # Normalize by std <-> divide by strata variance
+    normalized_var = filtered_var/filtered_strata_var
+    for i, c in enumerate("XYZ"):
+        adata.varp[f"var_{c}"] = normalized_var[i]
 
 
-def filter_normalize(
-    adata:AnnData, 
-    nstds:float=4
-):
+def filter_normalize(adata:AnnData):
     """Filter outliers and normalized by 1D genomic distance.
     
-    Filter out entries with pairwise difference `nstds` away from the
-    median pairwise difference stratified by 1D genomic distance. 
-    Then normalize the pairwise difference by the standard deviations
-    stratified by 1D genomic distance.
+    Filter out entries with pairwise difference 4 standard deviations
+    away from the median pairwise difference stratified by 1D genomic
+    distance. The standard deviations are estimated from a local linear
+    regression.
+    
+    The filtered pairwise difference is then normalized by the standard
+    deviations stratified by 1D genomic distance. Similarly, the 
+    standard deviations are estimated from a local linear regression.
     
     Append the followings to the `varp` field of `adata`:
     
@@ -107,12 +103,23 @@ def filter_normalize(
     ----------
     adata : AnnData
         Object created by :func:`FOF_CT_Loader.create_adata`.
-    nstds : float, optional
-        Values larger than this number of standard deviations away from
-        the median will be removed, by default 4.
     """
-    arr = _filter_pdiff(adata=adata, nstds=nstds)
-    _normalize_by1d(adata=adata, arr=arr)
+    n = adata.shape[0]
+    # Size of n*d*c*c = 1GB
+    c = round(1 * (n * 3 * 8 / 1e9) ** -0.5)
+
+    X = da.from_array(np.stack([
+        adata.layers[c] for c in "XYZ"
+    ]), chunks=(3,n,c))
+    arr = X[:,:,:,None] - X[:,:,None,:]
+
+    d1d = adata.var["Chrom_Start"].values
+    warnings.filterwarnings("ignore", "divide by zero")
+    log_d1map = np.log(np.abs(d1d[None,:] - d1d[:,None]))
+    warnings.filterwarnings("default")
+    
+    _filter_pdiff(adata, arr, log_d1map)
+    _normalize_pdiff(adata, arr, log_d1map)
 
 
 def joint_filter_normalize(*args, **kwargs):
@@ -139,23 +146,25 @@ def joint_filter_normalize(*args, **kwargs):
         Pass in `nstds=n` to change the filtering criterion like in 
         :func:`filter_normalize`, by default 4.
     """
-    nstds = kwargs.get("nstds", 4)
-    adataj = concat(args)
-    adataj.var = args[0].var.copy()
-    adataj.uns["Chrom"] = args[0].uns["Chrom"]
+    raise NotImplementedError("Joint filtering and normalization is" \
+        + "not implemented yet.")
+    # nstds = kwargs.get("nstds", 4)
+    # adataj = concat(args)
+    # adataj.var = args[0].var.copy()
+    # adataj.uns["Chrom"] = args[0].uns["Chrom"]
     
-    arr = _filter_pdiff(adata=adataj, nstds=nstds)
-    narr = _normalized_dask_arr(adata=adataj, arr=arr)
+    # arr = _filter_pdiff(adata=adataj, nstds=nstds)
+    # narr = _normalized_dask_arr(adata=adataj, arr=arr)
     
-    for adata in args:
-        fil = adataj.obs_names.isin(adata.obs_names)
-        count = da.sum(~da.isnan(narr[:,fil,:,:]), axis=1).compute()
-        var_norm = da.nanmean(da.square(
-            narr[:,fil,:,:]
-        ), axis=1).compute()
-        for i, c in enumerate(["X", "Y", "Z"]):
-            adata.varp[f"count_{c}"] = count[i]
-            adata.varp[f"var_{c}"] = var_norm[i]
+    # for adata in args:
+    #     fil = adataj.obs_names.isin(adata.obs_names)
+    #     count = da.sum(~da.isnan(narr[:,fil,:,:]), axis=1).compute()
+    #     var_norm = da.nanmean(da.square(
+    #         narr[:,fil,:,:]
+    #     ), axis=1).compute()
+    #     for i, c in enumerate(["X", "Y", "Z"]):
+    #         adata.varp[f"count_{c}"] = count[i]
+    #         adata.varp[f"var_{c}"] = var_norm[i]
 
 
 def axis_weight(adata:AnnData, inplace:bool=True) -> None|np.ndarray:

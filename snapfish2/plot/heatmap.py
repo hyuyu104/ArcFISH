@@ -249,7 +249,6 @@ def triangle_heatmap(
 
 def compare_loops(
     df1:pd.DataFrame, df2:pd.DataFrame, 
-    adata:AnnData|None=None,
     chr_id:str|None=None,
     map1:str="", map2:str="",
     c1:str="r", c2:str="b",
@@ -266,8 +265,6 @@ def compare_loops(
     df2 : pd.DataFrame
         The second list of loops to plot on the lower left triangle. 
         Must contain "c1", "s1", "e1", "c2", "s2", "e2" as columns.
-    adata : AnnData, optional
-        Plot the median pairwise distance from `adata` if provided.
     chr_id : str, optional
         Chromosome ID, by default None.
     map1 : str
@@ -327,12 +324,14 @@ def compare_loops(
     fontsize = ax.xaxis.label.get_size()
     (x1, x2), (y1, y2) = ax.get_xlim(), ax.get_ylim()
     ax.text(
-        x1 - 0.02*(x2-x1), y1 + 0.02*(y2-y1), map2, fontsize=fontsize,
-        va="bottom", ha="right", rotation=90,
+        x1 + 0.03*(x2-x1), y1 + 0.03*(y2-y1), map2, fontsize=fontsize,
+        verticalalignment="bottom", horizontalalignment="left",
+        path_effects=[pe.withStroke(linewidth=.5, foreground="white")]
     )
     ax.text(
-        x2 - 0.02*(x2-x1), y2 + 0.02*(y2-y1), map1, fontsize=fontsize,
-        va="bottom", ha="right", rotation=0
+        x2 - 0.03*(x2-x1), y2 - 0.03*(y2-y1), map1, fontsize=fontsize,
+        verticalalignment="top", horizontalalignment="right",
+        path_effects=[pe.withStroke(linewidth=.5, foreground="white")]
     )
     
     return ax
