@@ -1,36 +1,24 @@
 import warnings
 import numpy as np
+from statsmodels.nonparametric.smoothers_lowess import lowess
 from anndata import AnnData, concat
 import dask.array as da
 
 
-def _local_linear_regression(
+def _lowess_multivariate(
     log_d1map:np.ndarray, 
-    xs:np.ndarray, 
     ys:np.ndarray
 ) -> np.ndarray:
-    """Local linear regression based on 10% data points."""
-    num_nbrs = len(xs) // 10
-    xi = np.array([1, 0, 0, 0])
+    """Local linear regression based on 10% of the data."""
     strata_var = np.zeros((ys.shape[0], *log_d1map.shape))*np.nan
-    for x, c in zip(*np.unique(xs, return_counts=True)):
-        if c > num_nbrs:
-            Yi = np.nanmean(ys[:, xs==x], axis=1)
-        else:
-            diff = np.abs(xs - x)
-            r = np.sort(diff)[num_nbrs]/3
-            kept = diff <= 3*r
-            xr = xs[kept] - x
-            Xr = np.vstack([np.ones(len(xr)), xr, xr**2, xr**3]).T
-            Yr = ys[:, kept]
-
-            # Weight matrix (inverse of variance matrix in GLS)
-            W = np.exp(-np.square(xr/r)/2)
-            WX = W[:,None]*Xr
-            P = xi@np.linalg.pinv(WX.T@Xr)@WX.T
-            Yi = np.nansum(P[None,:]*Yr, axis=1)
-        strata_var[:, log_d1map==x] = np.exp(Yi[:,None])
-    return strata_var
+    uidx = np.triu_indices_from(log_d1map, k=1)
+    
+    for i, y in enumerate(ys):
+        strata_var[i][uidx] = lowess(
+            y, log_d1map[uidx], frac=.1, return_sorted=False
+        )
+        strata_var[i].T[uidx] = strata_var[i][uidx]
+    return np.exp(strata_var)
 
 
 def _filter_pdiff(adata:AnnData, arr:da.Array, log_d1map:np.ndarray):
@@ -41,12 +29,14 @@ def _filter_pdiff(adata:AnnData, arr:da.Array, log_d1map:np.ndarray):
     # 0 becomes -inf after taking log
     raw_var[np.isclose(raw_var, 0)] = np.nan
     
+    diag_indices = np.diag_indices_from(raw_var[0])
     for i, v in enumerate("XYZ"):
         adata.varp[f"raw_var_{v}"] = raw_var[i]
+        adata.varp[f"raw_var_{v}"][diag_indices] = 0
         
     uidx = np.triu_indices(log_d1map.shape[0], k=1)
-    raw_strata_var = _local_linear_regression(
-        log_d1map, log_d1map[uidx], np.log(raw_var[:,*uidx])
+    raw_strata_var = _lowess_multivariate(
+        log_d1map, np.log(raw_var[:,*uidx])
     )
     
     strata_std = np.sqrt(raw_strata_var)[:,None,:,:]
@@ -64,11 +54,13 @@ def _normalize_pdiff(adata:AnnData, arr:da.Array, log_d1map:np.ndarray):
     filtered_var = da.nanmean(da.square(
         arr - da.nanmean(arr, axis=1, keepdims=True)
     ), axis=1).compute()
-    filtered_var[np.isclose(filtered_var, 0)] = np.nan
     
     uidx = np.triu_indices(log_d1map.shape[0], k=1)
-    filtered_strata_var = _local_linear_regression(
-        log_d1map, log_d1map[uidx], np.log(filtered_var[:,*uidx])
+    flat_filtered_var = filtered_var[:,*uidx]
+    flat_filtered_var[np.isclose(flat_filtered_var, 0)] = np.nan
+    
+    filtered_strata_var = _lowess_multivariate(
+        log_d1map, np.log(flat_filtered_var)
     )
     # Normalize by std <-> divide by strata variance
     normalized_var = filtered_var/filtered_strata_var
