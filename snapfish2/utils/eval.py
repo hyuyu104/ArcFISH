@@ -64,8 +64,10 @@ def _normalize_pdiff(adata:AnnData, arr:da.Array, log_d1map:np.ndarray):
     )
     # Normalize by std <-> divide by strata variance
     normalized_var = filtered_var/filtered_strata_var
+    diag_indices = np.diag_indices_from(normalized_var[0])
     for i, c in enumerate("XYZ"):
         adata.varp[f"var_{c}"] = normalized_var[i]
+        adata.varp[f"var_{c}"][diag_indices] = 0
 
 
 def filter_normalize(adata:AnnData):
