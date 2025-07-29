@@ -34,6 +34,12 @@ class ABCaller:
         See available assembly IDs at: 
         `UCSC Genome browser <https://genome.ucsc.edu/cgi-bin/hgGateway>`_.
         Common assembly IDs are: "hg19", "hg38", "mm10".
+    centromere : bool, optional
+        If True, use centromere position to split the chromosome into
+        two parts and call A/B compartments separately, by default True.
+        If False, call A/B compartments for the whole chromosome.
+        
+        If `ref_genome` is None, this parameter is ignored.
     cutoff: float, optional
         Required only if method is "pca".
         Distance below `cutoff` is defined as contact, by dafault None.
@@ -47,12 +53,15 @@ class ABCaller:
         self, 
         min_cpmt_size:float,
         ref_genome:str|None=None,
+        centromere:bool=True,
         cutoff:float|None=None,
         sigma:float|None=1,
         method:Literal["axes", "pca"]="axes"
     ):
         self._min_cpmt_size = min_cpmt_size
         self._ref_genome = self._ref_genome_parser(ref_genome)
+        if self._ref_genome is None or not centromere:
+            self._centromeres = None
         self._cutoff = cutoff
         self._sigma = sigma
         self._method = method
@@ -70,10 +79,13 @@ class ABCaller:
             return None
         ref_genome = ref_genome.lower()
         pre = "https://hgdownload.soe.ucsc.edu/goldenPath"
-        url = f"{pre}/{ref_genome}/bigZips/genes/{ref_genome}.refGene.gtf.gz"
+        url1 = f"{pre}/{ref_genome}/bigZips/genes/{ref_genome}.refGene.gtf.gz"
+        url2 = f"{pre}/{ref_genome}/database/cytoBandIdeo.txt.gz"
         try:
-            response = requests.get(url)
-            response.raise_for_status()
+            response1 = requests.get(url1)
+            response1.raise_for_status()
+            response2 = requests.get(url2)
+            response2.raise_for_status()
         except requests.exceptions.HTTPError:
             warnings.warn(
                 f"{ref_genome} not found in UCSC. \n" + 
@@ -82,7 +94,7 @@ class ABCaller:
             )
             return None
         
-        with gzip.GzipFile(fileobj=BytesIO(response.content)) as gz:
+        with gzip.GzipFile(fileobj=BytesIO(response1.content)) as gz:
             gtf = pd.read_csv(
                 TextIOWrapper(gz), sep="\t", 
                 header=None, usecols=[0, 2, 3, 4]
@@ -91,6 +103,22 @@ class ABCaller:
             tss = gtf[gtf["feature"]=="transcript"].drop(columns="feature")
             del gtf
         self._tss = tss
+
+        with gzip.GzipFile(fileobj=BytesIO(response2.content)) as gz:
+            band_table = pd.read_csv(
+                TextIOWrapper(gz), sep="\t", 
+                header=None
+            )
+
+        band_table.columns = ["Chrom", "Chrom_Start", 
+                              "Chrom_End", "name", "gieStain"]
+
+        self._centromeres = (
+            band_table[band_table["gieStain"]=="acen"]
+            .sort_values("Chrom_End")
+            .groupby("Chrom", sort=False).head(1)
+            .set_index("Chrom")["Chrom_End"].to_dict()
+        )
         return ref_genome
     
     def _assign_cpmt_ref_genome(self, result, med_sq):
@@ -140,9 +168,24 @@ class ABCaller:
         if self._method == "axes":
             if "var_X" not in adata.varp:
                 filter_normalize(adata)
-            return self.by_axes_pc(adata)
+            func = self.by_axes_pc
         if self._method == "pca":
-            return self.by_first_pc(adata)
+            func = self.by_first_pc
+        
+        if self._centromeres is None:
+            return func(adata)
+        centromere = self._centromeres[adata.uns["Chrom"]]
+        p_arm = adata.var["Chrom_End"] <= centromere
+        q_arm = adata.var["Chrom_End"] > centromere
+        if p_arm.sum() < 2 or q_arm.sum() < 2:
+            warnings.warn(
+                "Centromere position not found in the imaging region. " +
+                "Calling A/B compartments for the whole chromosome."
+            )
+            return func(adata)
+        result1 = func(adata[:,p_arm])
+        result2 = func(adata[:,q_arm])
+        return pd.concat([result1, result2], ignore_index=True)
     
     @staticmethod
     def _spectral_clustering(
