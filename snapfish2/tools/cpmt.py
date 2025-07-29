@@ -112,9 +112,22 @@ class ABCaller:
 
         band_table.columns = ["Chrom", "Chrom_Start", 
                               "Chrom_End", "name", "gieStain"]
-
+        
+        if not (band_table["gieStain"]=="acen").any():
+            url3 = f"{pre}/{ref_genome}/database/gap.txt.gz"
+            response3 = requests.get(url3)
+            with gzip.GzipFile(fileobj=BytesIO(response3.content)) as gz:
+                gap_table = pd.read_csv(
+                    TextIOWrapper(gz), sep="\t", 
+                    header=None
+                )
+            gap_table.columns = ["bin", "Chrom", "Chrom_Start", "Chrom_End",
+                                 "ix", "n", "size", "type", "bridge"]
+            sub_table = gap_table[gap_table["type"]=="centromere"]
+        else:
+            sub_table = band_table[band_table["gieStain"]=="acen"]
         self._centromeres = (
-            band_table[band_table["gieStain"]=="acen"]
+            sub_table
             .sort_values("Chrom_End")
             .groupby("Chrom", sort=False).head(1)
             .set_index("Chrom")["Chrom_End"].to_dict()
