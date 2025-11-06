@@ -408,7 +408,10 @@ def triangle_domain_boundary(
     if fig is None:
         fig = plt.figure(figsize=(4, 1.5))
     
-    med_dist = median_pdist(adata, inplace=False)
+    if "med_dist" not in adata.varp:
+        med_dist = median_pdist(adata, inplace=False)
+    else:
+        med_dist = adata.varp["med_dist"]
     ax, cbar = triangle_heatmap(
         med_dist, adata.var, cut_hi=cut_hi, fig=fig, xticklabels=["", ""],
         **kwargs

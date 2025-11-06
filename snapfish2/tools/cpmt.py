@@ -243,6 +243,8 @@ class ABCaller:
         med_sq = np.stack([
             adata.varp[f"var_{c}"] for c in ["X", "Y", "Z"]
         ])
+        # Replace NaN with 1 as 1 is the normalized variance
+        med_sq[np.isnan(med_sq)] = 1
         # Already normalized. 
         # Hollowed or not does not matter. Same eigenspace.
         V = np.linalg.eigh(np.exp(-med_sq))[1][:,:,-2]

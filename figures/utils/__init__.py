@@ -1,7 +1,7 @@
 import os
 from . import *
 
-out_dire = "../123ACElog/072525"
+out_dire = "../123ACElog/103125"
 
 if not os.path.exists(out_dire):
     os.mkdir(out_dire)
