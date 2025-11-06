@@ -1,6 +1,6 @@
 import os
 import sys
-import snapfish2
+import arcfish
 sys.path.insert(0, os.path.abspath("../.."))
 print(sys.path)
 
@@ -15,7 +15,7 @@ print(sys.path)
 project = "SnapFISH2"
 copyright = "2024, Hongyu Yu"
 author = "Hongyu Yu"
-release = version = snapfish2.__version__
+release = version = arcfish.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

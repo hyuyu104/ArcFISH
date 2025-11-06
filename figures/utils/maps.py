@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from matplotlib_venn import venn3
 import seaborn as sns
 
-import snapfish2 as sf
+import arcfish as sf
 
 
 def tad_sample(out_dire):

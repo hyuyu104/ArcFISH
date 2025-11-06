@@ -5,12 +5,12 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "snapfish2"
+name = "arcfish"
 authors = [
   { name="Hongyu Yu", email="hongyuyu@unc.edu" }
 ]
 dynamic = ["version"]
-description = "An integrative analysis tool for multiplexed FISH"
+description = "Accurate and robust 3D genome feature discovery from chromatin tracing data"
 readme = "README.md"
 requires-python = ">=3.12"
 classifiers = [
@@ -32,7 +32,7 @@ dependencies = [
 ]
 
 [tool.setuptools.dynamic]
-version = {attr = "snapfish2.__version__"}
+version = {attr = "arcfish.__version__"}
 
 [project.optional-dependencies]
 docs = [
@@ -47,12 +47,12 @@ docs = [
 ]
 
 [project.urls]
-Source = "https://github.com/hyuyu104/SnapFISH2"
+Source = "https://github.com/hyuyu104/ArcFISH"
 Docs = "https://github.com/hyuyu104/DNEYET"
 
 [project.scripts]
-snapfish2 = "snapfish2.wrapper.cmdline:main"
+arcfish = "arcfish.wrapper.cmdline:main"
 
 [tool.setuptools]
-packages = ["snapfish2"]
+packages = ["arcfish"]
 py-modules = ["__init__"]

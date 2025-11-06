@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_curve, precision_recall_curve
 
-import snapfish2 as sf
+import arcfish as sf
 
 
 def filter_loops(df, loader):

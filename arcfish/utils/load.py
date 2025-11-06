@@ -28,9 +28,9 @@ class FOF_CT_Loader:
     path : str | list | dict
         The path of the FOF_CT file. Can be a list or a dictionary
         specifying multiple files.
-    voxel_ratio : dict | None, optional
-        The conversion factor to convert voxel coordinate to actual
-        physical coordinate. No conversion if None, by default None.
+    nm_ratio : dict | None, optional
+        The conversion factor to convert raw coordinate to physical
+        coordinate in nm. No conversion if None, by default None.
     var_cols_add : list | None, optional
         Additional columns added to `var` field in the AnnData 
         object, by default None.
@@ -48,7 +48,7 @@ class FOF_CT_Loader:
     """
     def __init__(self, 
         path:str|list|dict,
-        voxel_ratio:dict|None=None,
+        nm_ratio:dict|None=None,
         var_cols_add:list|None=None,
         obs_cols_add:list|None=None,
         **kwargs             
@@ -64,7 +64,7 @@ class FOF_CT_Loader:
         
         self._path = path
         
-        self._voxel_ratio = voxel_ratio
+        self._nm_ratio = nm_ratio
         self._var_cols_add = var_cols_add
         self._obs_cols_add = obs_cols_add
         self._kwargs = kwargs
@@ -76,11 +76,11 @@ class FOF_CT_Loader:
         return self._path
     
     @property
-    def voxel_ratio(self) -> dict|None:
+    def nm_ratio(self) -> dict|None:
         """dict|None : Conversion factor to convert voxel coordinate to
         actual physical coordinate.
         """
-        return self._voxel_ratio
+        return self._nm_ratio
         
     @property
     def info(self) -> list|dict:
@@ -265,8 +265,8 @@ class FOF_CT_Loader:
             data = pd.concat(data, ignore_index=True)
         
         # Convert voxel coordinates to nm
-        if self._voxel_ratio is not None:
-            for k, v in self._voxel_ratio.items():
+        if self._nm_ratio is not None:
+            for k, v in self._nm_ratio.items():
                 data[k] = data[k] * v
                 
         var_cols = ["Chrom_Start", "Chrom_End"]

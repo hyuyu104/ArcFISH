@@ -17,8 +17,8 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-import snapfish2 as sf
-from snapfish2.tools.func import (
+import arcfish as sf
+from arcfish.tools.func import (
     overlap,
     loop_overlap, 
     all_possible_pairs,

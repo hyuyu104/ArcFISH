@@ -10,7 +10,7 @@ import seaborn as sns
 from sklearn.metrics import precision_recall_curve
 import pyBigWig
 
-import snapfish2 as sf
+import arcfish as sf
 
 
 CMAP = {"SnapFISH": "darkorange", "SnapFISH2": "darkgreen"}
@@ -165,7 +165,7 @@ def prc_proportion(
     methods = avg_prc["method"].unique()
     err_vals = avg_prc["err"].unique()
 
-    for i, method in enumerate(methods):
+    for i, method in enumerate(palette.keys()):
         data = avg_prc[avg_prc["method"] == method]
         # Calculate positions for each bar
         positions = np.arange(len(err_vals)) \
@@ -196,7 +196,7 @@ def loop_stack_bar(fig, test_dfs):
     loop_count = pd.concat([
         test_df["count"].value_counts() for test_df in test_dfs
     ], axis=1).fillna(0).astype(int)
-    loop_count.columns = ["SnapFISH", "SnapFISH2"]
+    loop_count.columns = ["SnapFISH", "ArcFISH"]
     loop_frac = loop_count / loop_count.sum(axis=0)
     loop_frac = loop_frac.loc[np.arange(len(loop_frac), dtype=int)]
 
@@ -212,7 +212,7 @@ def loop_stack_bar(fig, test_dfs):
     loop_frac.T.iloc[1:].plot(kind="barh", stacked=True, linewidth=.5, edgecolor="k",
                         colormap="Reds", width=0.2, ax=axes[1])
     axes[1].grid(False)
-    lbls = [f"{t*100:.1f}%" for t in loop_frac["SnapFISH2"]]
+    lbls = [f"{t*100:.1f}%" for t in loop_frac["ArcFISH"]]
     axes[1].legend(labels=lbls, loc="lower center", ncol=7)
     bar = axes[1].patches[0]
 
