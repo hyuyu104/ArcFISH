@@ -25,7 +25,7 @@ To run this script,
 """
 
 wkdir = "/proj/yunligrp/users/hongyuyu/ArcFISH"
-out_dire = f"{wkdir}/123ACElog/072525"
+out_dire = f"{wkdir}/output"
 
 import os, sys
 import anndata as ad

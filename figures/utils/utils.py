@@ -180,7 +180,7 @@ def domain_chipseq_df(dtree, loader, res1, res2, markers, dire="chipseq_mesc"):
     
     rows = []
     for label, df in zip(
-        ["Average", "SnapFISH", "SnapFISH2"],
+        ["Average", "SnapFISH", "ArcFISH"],
         [d1df, res1, res2]
     ):
         for marker in markers:

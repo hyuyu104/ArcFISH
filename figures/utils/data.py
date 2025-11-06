@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-import arcfish as sf
+import arcfish as af
 from arcfish.tools.func import (
     overlap,
     loop_overlap, 
@@ -168,13 +168,13 @@ def add_noise(
         out_paths = dict(enumerate(out_paths))
     
     for k, v in input_paths.items():
-        loader = sf.pp.FOF_CT_Loader(v)
+        loader = af.pp.FOF_CT_Loader(v)
         data = loader.read_data()
         for axis in voxel_ratio:
             data[axis] *= voxel_ratio[axis]
             data[axis] += stats.norm.rvs(size=(len(data)), scale=noises[axis])
             data[axis] /= voxel_ratio[axis]
-        sf.pp.save_fof_ct_core(data, loader.info, out_paths[k])
+        af.pp.save_fof_ct_core(data, loader.info, out_paths[k])
     
 ########################################################################
 ##                 Actual processing of all files                     ##
@@ -184,7 +184,7 @@ def proc_chipseq_mesc(data_dire:str="../data"):
     dtree = DataTree(data_dire)
     
     fish_path = dtree["takei_nature_2021","25Kb","rep1"]
-    d1df = sf.MulFish(fish_path).data[[
+    d1df = af.MulFish(fish_path).data[[
         "Chrom", "Chrom_Start", "Chrom_End"
     ]].drop_duplicates()
     
@@ -205,7 +205,7 @@ def filter_chiapet(
     cut_lo:float=1e5,
     cut_hi:float=1e6
 ):
-    loader = sf.pp.FOF_CT_Loader(fish_path)
+    loader = af.pp.FOF_CT_Loader(fish_path)
     d1cols = ["Chrom", "Chrom_Start", "Chrom_End"]
     d1df = loader.read_data()[d1cols].drop_duplicates().groupby(
         "Chrom", sort=False
@@ -227,7 +227,7 @@ def proc_chiapet_mesc(data_dire:str="../data"):
     dtree = DataTree(data_dire)
     
     fish_path = dtree["takei_nature_2021","25Kb","rep1"]
-    d1df = sf.MulFish(fish_path).data[[
+    d1df = af.MulFish(fish_path).data[[
         "Chrom", "Chrom_Start", "Chrom_End"
     ]].drop_duplicates()
     
