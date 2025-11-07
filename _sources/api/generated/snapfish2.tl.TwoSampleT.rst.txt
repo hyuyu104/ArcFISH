@@ -1,0 +1,25 @@
+﻿snapfish2.tl.TwoSampleT
+=======================
+
+.. currentmodule:: snapfish2.tl
+
+.. autoclass:: TwoSampleT
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~TwoSampleT.__init__
+      ~TwoSampleT.append_pval
+      ~TwoSampleT.append_summit
+      ~TwoSampleT.ij_background
+   
+   
+
+   
+   
+   

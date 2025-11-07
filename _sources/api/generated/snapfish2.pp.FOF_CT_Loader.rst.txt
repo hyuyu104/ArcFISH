@@ -1,0 +1,33 @@
+﻿snapfish2.pp.FOF\_CT\_Loader
+============================
+
+.. currentmodule:: snapfish2.pp
+
+.. autoclass:: FOF_CT_Loader
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~FOF_CT_Loader.__init__
+      ~FOF_CT_Loader.create_adata
+      ~FOF_CT_Loader.read_data
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~FOF_CT_Loader.chr_ids
+      ~FOF_CT_Loader.info
+      ~FOF_CT_Loader.path
+      ~FOF_CT_Loader.voxel_ratio
+   
+   

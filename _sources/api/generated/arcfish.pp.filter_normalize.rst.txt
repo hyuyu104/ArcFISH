@@ -1,0 +1,6 @@
+﻿arcfish.pp.filter\_normalize
+============================
+
+.. currentmodule:: arcfish.pp
+
+.. autofunction:: filter_normalize

@@ -1,0 +1,6 @@
+﻿arcfish.pp.joint\_filter\_normalize
+===================================
+
+.. currentmodule:: arcfish.pp
+
+.. autofunction:: joint_filter_normalize

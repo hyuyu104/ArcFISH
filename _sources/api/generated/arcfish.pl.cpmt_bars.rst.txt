@@ -1,0 +1,6 @@
+﻿arcfish.pl.cpmt\_bars
+=====================
+
+.. currentmodule:: arcfish.pl
+
+.. autofunction:: cpmt_bars

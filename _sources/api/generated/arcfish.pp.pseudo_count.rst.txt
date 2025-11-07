@@ -1,0 +1,6 @@
+﻿arcfish.pp.pseudo\_count
+========================
+
+.. currentmodule:: arcfish.pp
+
+.. autofunction:: pseudo_count

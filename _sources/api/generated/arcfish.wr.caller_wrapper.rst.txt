@@ -1,0 +1,6 @@
+﻿arcfish.wr.caller\_wrapper
+==========================
+
+.. currentmodule:: arcfish.wr
+
+.. autofunction:: caller_wrapper

@@ -1,0 +1,25 @@
+﻿arcfish.tl.LoopTestAbstract
+===========================
+
+.. currentmodule:: arcfish.tl
+
+.. autoclass:: LoopTestAbstract
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~LoopTestAbstract.__init__
+      ~LoopTestAbstract.append_pval
+      ~LoopTestAbstract.append_summit
+      ~LoopTestAbstract.ij_background
+   
+   
+
+   
+   
+   

@@ -1,0 +1,6 @@
+﻿snapfish2.pp.pseudo\_count
+==========================
+
+.. currentmodule:: snapfish2.pp
+
+.. autofunction:: pseudo_count

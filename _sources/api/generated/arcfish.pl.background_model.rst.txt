@@ -1,0 +1,6 @@
+﻿arcfish.pl.background\_model
+============================
+
+.. currentmodule:: arcfish.pl
+
+.. autofunction:: background_model

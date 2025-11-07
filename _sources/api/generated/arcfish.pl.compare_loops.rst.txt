@@ -1,0 +1,6 @@
+﻿arcfish.pl.compare\_loops
+=========================
+
+.. currentmodule:: arcfish.pl
+
+.. autofunction:: compare_loops

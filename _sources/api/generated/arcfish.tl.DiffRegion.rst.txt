@@ -1,0 +1,29 @@
+﻿arcfish.tl.DiffRegion
+=====================
+
+.. currentmodule:: arcfish.tl
+
+.. autoclass:: DiffRegion
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~DiffRegion.__init__
+      ~DiffRegion.diff_loops
+      ~DiffRegion.diff_region
+      ~DiffRegion.entry_pvals
+      ~DiffRegion.loop_pvals
+      ~DiffRegion.pval_to_fdr
+      ~DiffRegion.region_pvals
+      ~DiffRegion.to_bedpe
+   
+   
+
+   
+   
+   

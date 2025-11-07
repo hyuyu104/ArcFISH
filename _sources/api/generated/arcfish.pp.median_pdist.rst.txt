@@ -1,0 +1,6 @@
+﻿arcfish.pp.median\_pdist
+========================
+
+.. currentmodule:: arcfish.pp
+
+.. autofunction:: median_pdist

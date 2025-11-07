@@ -1,0 +1,6 @@
+﻿snapfish2.pp.joint\_filter\_normalize
+=====================================
+
+.. currentmodule:: snapfish2.pp
+
+.. autofunction:: joint_filter_normalize

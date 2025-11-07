@@ -1,0 +1,31 @@
+﻿arcfish.tl.ABCaller
+===================
+
+.. currentmodule:: arcfish.tl
+
+.. autoclass:: ABCaller
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ABCaller.__init__
+      ~ABCaller.by_axes_pc
+      ~ABCaller.by_first_pc
+      ~ABCaller.call_cpmt
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ABCaller.tss
+   
+   

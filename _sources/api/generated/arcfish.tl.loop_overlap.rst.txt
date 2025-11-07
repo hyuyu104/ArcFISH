@@ -1,0 +1,6 @@
+﻿arcfish.tl.loop\_overlap
+========================
+
+.. currentmodule:: arcfish.tl
+
+.. autofunction:: loop_overlap

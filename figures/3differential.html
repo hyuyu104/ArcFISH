@@ -1,0 +1,1738 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Differential Loops and TADs &#8212; SnapFISH2 2.0.0 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=51b770b3"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=63a342dc"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'figures/3differential';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="A/B Compartment Calling" href="4cpmt_benchmark.html" />
+    <link rel="prev" title="Domain Identification" href="2tad_benchmark.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="2.0.0" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">SnapFISH2</p>
+  
+</a></div>
+    
+      <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../install.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorial/index.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../workflow.html">
+    Workflow
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    Reproducibility
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/hyuhyu104/DNEYET" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../install.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorial/index.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../workflow.html">
+    Workflow
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    Reproducibility
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/hyuhyu104/DNEYET" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Reproducing Figures</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="0algorithm.html">Algorithm Illustration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="1loop_benchmark.html">Chromatin Loop Calling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2tad_benchmark.html">Domain Identification</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Differential Loops and TADs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="4cpmt_benchmark.html">A/B Compartment Calling</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">Reproducibility</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Differential Loops and TADs</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="Differential-Loops-and-TADs">
+<h1>Differential Loops and TADs<a class="headerlink" href="#Differential-Loops-and-TADs" title="Link to this heading">#</a></h1>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">importlib</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">stats</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+
+<span class="kn">from</span> <span class="nn">utils.data</span> <span class="kn">import</span> <span class="n">DataTree</span>
+<span class="kn">import</span> <span class="nn">snapfish2</span> <span class="k">as</span> <span class="nn">sf</span>
+<span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">sf</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;module &#39;snapfish2&#39; from &#39;/Users/redfishhh/Documents/research/MultiplexedFISH/LoopTests/snapfish2/__init__.py&#39;&gt;
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">reload_ext</span> autoreload
+<span class="o">%</span><span class="k">autoreload</span> 2
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">out_dire</span> <span class="o">=</span> <span class="s2">&quot;../123ACElog/050225&quot;</span>
+<span class="n">dtree</span> <span class="o">=</span> <span class="n">DataTree</span><span class="p">(</span><span class="s2">&quot;../data&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">reps</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;rep1&quot;</span><span class="p">,</span> <span class="s2">&quot;rep2&quot;</span><span class="p">,</span> <span class="s2">&quot;rep3&quot;</span><span class="p">]</span>
+<span class="n">loader</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">pp</span><span class="o">.</span><span class="n">FOF_CT_Loader</span><span class="p">({</span>
+    <span class="n">c</span><span class="p">:</span> <span class="n">dtree</span><span class="p">[</span><span class="s2">&quot;takei_science_2021&quot;</span><span class="p">,</span> <span class="s2">&quot;25Kb&quot;</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">reps</span>
+<span class="p">},</span> <span class="n">voxel_ratio</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;X&quot;</span><span class="p">:</span> <span class="mi">103</span><span class="p">,</span> <span class="s2">&quot;Y&quot;</span><span class="p">:</span> <span class="mi">103</span><span class="p">,</span> <span class="s2">&quot;Z&quot;</span><span class="p">:</span> <span class="mi">250</span><span class="p">},</span> <span class="n">obs_cols_add</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Cell_ID&quot;</span><span class="p">])</span>
+<span class="n">celldfs</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">pp</span><span class="o">.</span><span class="n">FOF_CT_Loader</span><span class="p">({</span>
+    <span class="n">c</span><span class="p">:</span> <span class="n">dtree</span><span class="p">[</span><span class="s2">&quot;takei_science_2021&quot;</span><span class="p">,</span> <span class="s2">&quot;cell_type&quot;</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">reps</span>
+<span class="p">})</span><span class="o">.</span><span class="n">read_data</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<section id="Differential-TAD-demo">
+<h2>Differential TAD demo<a class="headerlink" href="#Differential-TAD-demo" title="Link to this heading">#</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">chr_id</span> <span class="o">=</span> <span class="s2">&quot;chr3&quot;</span>
+<span class="n">adata</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">create_adata</span><span class="p">(</span><span class="n">chr_id</span><span class="p">)</span>
+<span class="n">sf</span><span class="o">.</span><span class="n">pp</span><span class="o">.</span><span class="n">add_cell_type</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span> <span class="n">celldfs</span><span class="p">,</span> <span class="s2">&quot;Cell_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;cluster label&quot;</span><span class="p">)</span>
+<span class="n">celltype_dict</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span><span class="s1">&#39;Pvalb&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span><span class="s1">&#39;Vip&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span><span class="s1">&#39;Ndnf&#39;</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span><span class="s1">&#39;Sst&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">:</span><span class="s1">&#39;Astro&#39;</span><span class="p">,</span>
+                 <span class="mi">6</span><span class="p">:</span><span class="s1">&#39;Micro&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">:</span><span class="s1">&#39;Endo&#39;</span><span class="p">,</span> <span class="mi">8</span><span class="p">:</span><span class="s1">&#39;Oligo&#39;</span><span class="p">,</span> <span class="mi">9</span><span class="p">:</span><span class="s1">&#39;Ex&#39;</span><span class="p">}</span>
+<span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s2">&quot;cell_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s2">&quot;cluster label&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">celltype_dict</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">adata1</span> <span class="o">=</span> <span class="n">adata</span><span class="p">[</span><span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s2">&quot;cell_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Micro&quot;</span><span class="p">]</span>
+<span class="n">adata2</span> <span class="o">=</span> <span class="n">adata</span><span class="p">[</span><span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s2">&quot;cell_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Pvalb&quot;</span><span class="p">]</span>
+<span class="n">caller</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">tl</span><span class="o">.</span><span class="n">TADCaller</span><span class="p">(</span><span class="n">tree</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mf">4e5</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">4.3</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">sf</span><span class="o">.</span><span class="n">pl</span><span class="o">.</span><span class="n">domain_boundary</span><span class="p">(</span><span class="n">adata1</span><span class="p">,</span> <span class="n">caller</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span>
+                      <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Micro (N=</span><span class="si">{</span><span class="n">adata1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+<span class="n">sf</span><span class="o">.</span><span class="n">pl</span><span class="o">.</span><span class="n">domain_boundary</span><span class="p">(</span><span class="n">adata2</span><span class="p">,</span> <span class="n">caller</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span>
+                      <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Pvalb (N=</span><span class="si">{</span><span class="n">adata2</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dire</span><span class="p">,</span> <span class="s2">&quot;Micro_Pvalb_TADs.pdf&quot;</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/redfishhh/Documents/research/MultiplexedFISH/LoopTests/snapfish2/utils/eval.py:19: ImplicitModificationWarning: Setting element `.varp[&#39;raw_var_X&#39;]` of view, initializing view as actual.
+  adata.varp[f&#34;raw_var_{v}&#34;] = med_sq[i]
+/Users/redfishhh/Documents/research/MultiplexedFISH/LoopTests/snapfish2/utils/eval.py:19: ImplicitModificationWarning: Setting element `.varp[&#39;raw_var_X&#39;]` of view, initializing view as actual.
+  adata.varp[f&#34;raw_var_{v}&#34;] = med_sq[i]
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/figures_3differential_7_1.png" src="../_images/figures_3differential_7_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">caller</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">tl</span><span class="o">.</span><span class="n">TADCaller</span><span class="p">(</span><span class="n">tree</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mf">4e5</span><span class="p">)</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">caller</span><span class="o">.</span><span class="n">to_bedpe</span><span class="p">(</span><span class="n">caller</span><span class="o">.</span><span class="n">call_tads</span><span class="p">(</span><span class="n">adata1</span><span class="p">))</span>
+<span class="n">diff</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">tl</span><span class="o">.</span><span class="n">DiffRegion</span><span class="p">(</span><span class="n">adata1</span><span class="p">,</span> <span class="n">adata2</span><span class="p">)</span>
+<span class="n">res_diff</span> <span class="o">=</span> <span class="n">diff</span><span class="o">.</span><span class="n">diff_region</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">2.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">sf</span><span class="o">.</span><span class="n">pl</span><span class="o">.</span><span class="n">pairwise_heatmap</span><span class="p">(</span>
+    <span class="n">X2</span><span class="o">=</span><span class="n">sf</span><span class="o">.</span><span class="n">pp</span><span class="o">.</span><span class="n">median_pdist</span><span class="p">(</span><span class="n">adata1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+    <span class="n">X1</span><span class="o">=</span><span class="n">sf</span><span class="o">.</span><span class="n">pp</span><span class="o">.</span><span class="n">median_pdist</span><span class="p">(</span><span class="n">adata2</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+    <span class="n">y</span><span class="o">=</span><span class="s2">&quot;Micro&quot;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s2">&quot;Pvalb&quot;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">120</span>
+<span class="p">)</span>
+<span class="n">sf</span><span class="o">.</span><span class="n">pl</span><span class="o">.</span><span class="n">add_domain_fdr</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">res_diff</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dire</span><span class="p">,</span> <span class="s2">&quot;Micro_Pvalb_dTAD.pdf&quot;</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/figures_3differential_8_0.png" src="../_images/figures_3differential_8_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">res_diff</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>c1</th>
+      <th>s1</th>
+      <th>e1</th>
+      <th>c2</th>
+      <th>s2</th>
+      <th>e2</th>
+      <th>stat1</th>
+      <th>stat2</th>
+      <th>level</th>
+      <th>idx1</th>
+      <th>idx2</th>
+      <th>stat</th>
+      <th>pval</th>
+      <th>fdr</th>
+      <th>log_fdr</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>chr3</td>
+      <td>7675000</td>
+      <td>7700000</td>
+      <td>chr3</td>
+      <td>8525000</td>
+      <td>8550000</td>
+      <td>NaN</td>
+      <td>1.633124e+16</td>
+      <td>0</td>
+      <td>0</td>
+      <td>28</td>
+      <td>4.183317</td>
+      <td>0.074689</td>
+      <td>0.074689</td>
+      <td>-2.594426</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>chr3</td>
+      <td>8525000</td>
+      <td>8550000</td>
+      <td>chr3</td>
+      <td>9300000</td>
+      <td>9325000</td>
+      <td>1.633124e+16</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>28</td>
+      <td>59</td>
+      <td>16.300974</td>
+      <td>0.019503</td>
+      <td>0.039005</td>
+      <td>-3.244060</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">adata1</span> <span class="o">=</span> <span class="n">adata</span><span class="p">[</span><span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s2">&quot;cell_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Astro&quot;</span><span class="p">]</span>
+<span class="n">adata2</span> <span class="o">=</span> <span class="n">adata</span><span class="p">[</span><span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s2">&quot;cell_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Pvalb&quot;</span><span class="p">]</span>
+<span class="n">caller</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">tl</span><span class="o">.</span><span class="n">TADCaller</span><span class="p">(</span><span class="n">tree</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mf">4e5</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">4.3</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">sf</span><span class="o">.</span><span class="n">pl</span><span class="o">.</span><span class="n">domain_boundary</span><span class="p">(</span><span class="n">adata1</span><span class="p">,</span> <span class="n">caller</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span>
+                      <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Astro (N=</span><span class="si">{</span><span class="n">adata1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+<span class="n">sf</span><span class="o">.</span><span class="n">pl</span><span class="o">.</span><span class="n">domain_boundary</span><span class="p">(</span><span class="n">adata2</span><span class="p">,</span> <span class="n">caller</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span>
+                      <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Pvalb (N=</span><span class="si">{</span><span class="n">adata2</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dire</span><span class="p">,</span> <span class="s2">&quot;Astro_Pvalb_TADs.pdf&quot;</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/redfishhh/Documents/research/MultiplexedFISH/LoopTests/snapfish2/utils/eval.py:22: ImplicitModificationWarning: Setting element `.varp[&#39;raw_var_X&#39;]` of view, initializing view as actual.
+  adata.varp[f&#34;raw_var_{v}&#34;] = med_sq[i]
+/Users/redfishhh/Documents/research/MultiplexedFISH/LoopTests/snapfish2/utils/eval.py:22: ImplicitModificationWarning: Setting element `.varp[&#39;raw_var_X&#39;]` of view, initializing view as actual.
+  adata.varp[f&#34;raw_var_{v}&#34;] = med_sq[i]
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/figures_3differential_10_1.png" src="../_images/figures_3differential_10_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">caller</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">tl</span><span class="o">.</span><span class="n">TADCaller</span><span class="p">(</span><span class="n">tree</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mf">4e5</span><span class="p">)</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">caller</span><span class="o">.</span><span class="n">to_bedpe</span><span class="p">(</span><span class="n">caller</span><span class="o">.</span><span class="n">call_tads</span><span class="p">(</span><span class="n">adata1</span><span class="p">))</span>
+<span class="n">diff</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">tl</span><span class="o">.</span><span class="n">DiffRegion</span><span class="p">(</span><span class="n">adata1</span><span class="p">,</span> <span class="n">adata2</span><span class="p">)</span>
+<span class="n">res_diff</span> <span class="o">=</span> <span class="n">diff</span><span class="o">.</span><span class="n">diff_region</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="n">res</span><span class="p">[</span><span class="s2">&quot;level&quot;</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span><span class="p">])</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">2.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">sf</span><span class="o">.</span><span class="n">pl</span><span class="o">.</span><span class="n">pairwise_heatmap</span><span class="p">(</span>
+    <span class="n">X1</span><span class="o">=</span><span class="n">sf</span><span class="o">.</span><span class="n">pp</span><span class="o">.</span><span class="n">median_pdist</span><span class="p">(</span><span class="n">adata1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+    <span class="n">X2</span><span class="o">=</span><span class="n">sf</span><span class="o">.</span><span class="n">pp</span><span class="o">.</span><span class="n">median_pdist</span><span class="p">(</span><span class="n">adata2</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+    <span class="n">x</span><span class="o">=</span><span class="s2">&quot;Astro&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s2">&quot;Pvalb&quot;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">120</span>
+<span class="p">)</span>
+<span class="n">sf</span><span class="o">.</span><span class="n">pl</span><span class="o">.</span><span class="n">add_domain_fdr</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">res_diff</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dire</span><span class="p">,</span> <span class="s2">&quot;Astro_Pvalb_dTAD.pdf&quot;</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/figures_3differential_11_0.png" src="../_images/figures_3differential_11_0.png" />
+</div>
+</div>
+</section>
+<section id="Control-type-I-error-rate">
+<h2>Control type I error rate<a class="headerlink" href="#Control-type-I-error-rate" title="Link to this heading">#</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">loaders</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">c</span><span class="p">:</span> <span class="n">sf</span><span class="o">.</span><span class="n">pp</span><span class="o">.</span><span class="n">FOF_CT_Loader</span><span class="p">(</span><span class="n">dtree</span><span class="p">[</span><span class="s2">&quot;takei_science_2021&quot;</span><span class="p">,</span> <span class="s2">&quot;25Kb&quot;</span><span class="p">,</span> <span class="n">c</span><span class="p">],</span>
+                           <span class="n">voxel_ratio</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;X&quot;</span><span class="p">:</span> <span class="mi">103</span><span class="p">,</span> <span class="s2">&quot;Y&quot;</span><span class="p">:</span> <span class="mi">103</span><span class="p">,</span> <span class="s2">&quot;Z&quot;</span><span class="p">:</span> <span class="mi">250</span><span class="p">},</span>
+                           <span class="n">obs_cols_add</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Cell_ID&quot;</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;rep1&quot;</span><span class="p">,</span> <span class="s2">&quot;rep2&quot;</span><span class="p">,</span> <span class="s2">&quot;rep3&quot;</span><span class="p">]</span>
+<span class="p">}</span>
+<span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">loaders</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">adata</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">create_adata</span><span class="p">(</span><span class="s2">&quot;chr3&quot;</span><span class="p">)</span>
+    <span class="n">sf</span><span class="o">.</span><span class="n">pp</span><span class="o">.</span><span class="n">add_cell_type</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span> <span class="n">celldfs</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="s2">&quot;Cell_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;cluster label&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dtree</span><span class="p">[</span><span class="s2">&quot;takei_nature_2021&quot;</span><span class="p">,</span> <span class="s2">&quot;25Kb&quot;</span><span class="p">,</span> <span class="s2">&quot;rep2&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&#39;../data/takei_nature_2021/4DNFIQXONUUH.csv&#39;
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">chr_id</span> <span class="o">=</span> <span class="s2">&quot;chr3&quot;</span>
+<span class="n">rep1</span> <span class="o">=</span> <span class="n">loaders</span><span class="p">[</span><span class="s2">&quot;rep1&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">create_adata</span><span class="p">(</span><span class="n">chr_id</span><span class="p">)</span>
+<span class="n">rep2</span> <span class="o">=</span> <span class="n">loaders</span><span class="p">[</span><span class="s2">&quot;rep2&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">create_adata</span><span class="p">(</span><span class="n">chr_id</span><span class="p">)</span>
+<span class="n">diff</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">tl</span><span class="o">.</span><span class="n">DiffRegion</span><span class="p">(</span><span class="n">rep1</span><span class="p">,</span> <span class="n">rep2</span><span class="p">)</span>
+<span class="n">diff</span><span class="o">.</span><span class="n">diff_region</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+AnnData object with n_obs × n_vars = 1615 × 60
+    obs: &#39;Cell_ID&#39;, &#39;cluster label&#39;
+    var: &#39;Chrom_Start&#39;, &#39;Chrom_End&#39;
+    uns: &#39;Chrom&#39;
+    layers: &#39;X&#39;, &#39;Y&#39;, &#39;Z&#39;
+</pre></div></div>
+</div>
+</section>
+<section id="Differential-loop-demo">
+<h2>Differential loop demo<a class="headerlink" href="#Differential-loop-demo" title="Link to this heading">#</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">oadata</span> <span class="o">=</span> <span class="n">adata</span><span class="p">[</span><span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s2">&quot;cell_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Ex&quot;</span><span class="p">]</span>
+<span class="n">sf</span><span class="o">.</span><span class="n">pp</span><span class="o">.</span><span class="n">filter_normalize</span><span class="p">(</span><span class="n">oadata</span><span class="p">)</span>
+<span class="n">loop</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">tl</span><span class="o">.</span><span class="n">LoopCaller</span><span class="p">()</span>
+<span class="n">loop_res</span> <span class="o">=</span> <span class="n">loop</span><span class="o">.</span><span class="n">call_loops</span><span class="p">(</span><span class="n">oadata</span><span class="p">)</span>
+<span class="n">loop_df</span> <span class="o">=</span> <span class="n">loop</span><span class="o">.</span><span class="n">to_bedpe</span><span class="p">(</span><span class="n">loop_res</span><span class="p">,</span> <span class="n">oadata</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/redfishhh/Documents/research/MultiplexedFISH/LoopTests/snapfish2/utils/eval.py:22: ImplicitModificationWarning: Setting element `.varp[&#39;raw_var_X&#39;]` of view, initializing view as actual.
+  adata.varp[f&#34;raw_var_{v}&#34;] = med_sq[i]
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">10.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">sf</span><span class="o">.</span><span class="n">pl</span><span class="o">.</span><span class="n">pairwise_heatmap</span><span class="p">(</span><span class="n">sf</span><span class="o">.</span><span class="n">pp</span><span class="o">.</span><span class="n">median_pdist</span><span class="p">(</span><span class="n">oadata</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Median Distance (nm)&quot;</span><span class="p">)</span>
+<span class="n">sf</span><span class="o">.</span><span class="n">pl</span><span class="o">.</span><span class="n">pairwise_heatmap</span><span class="p">(</span><span class="n">loop_res</span><span class="p">[</span><span class="s2">&quot;stat&quot;</span><span class="p">],</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;flare&quot;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">1e2</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Test Statistics&quot;</span><span class="p">)</span>
+<span class="n">sf</span><span class="o">.</span><span class="n">pl</span><span class="o">.</span><span class="n">pairwise_heatmap</span><span class="p">(</span><span class="n">loop_res</span><span class="p">[</span><span class="s2">&quot;fdr&quot;</span><span class="p">],</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;copper&quot;</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;FDR&quot;</span><span class="p">)</span>
+<span class="n">sf</span><span class="o">.</span><span class="n">pl</span><span class="o">.</span><span class="n">pairwise_heatmap</span><span class="p">(</span><span class="n">loop_res</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">],</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;tab20c&quot;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Loop Candidates&quot;</span><span class="p">)</span>
+<span class="n">sf</span><span class="o">.</span><span class="n">pl</span><span class="o">.</span><span class="n">pairwise_heatmap</span><span class="p">(</span><span class="n">loop_res</span><span class="p">[</span><span class="s2">&quot;final&quot;</span><span class="p">],</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;Reds&quot;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Filtered Loop&quot;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dire</span><span class="p">,</span> <span class="s2">&quot;Ex_Loop.pdf&quot;</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/figures_3differential_18_0.png" src="../_images/figures_3differential_18_0.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">adata_endo</span> <span class="o">=</span> <span class="n">adata</span><span class="p">[</span><span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s2">&quot;cell_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Endo&quot;</span><span class="p">]</span>
+<span class="n">adata_astro</span> <span class="o">=</span> <span class="n">adata</span><span class="p">[</span><span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s2">&quot;cell_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Astro&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">utils.maps</span> <span class="kn">import</span> <span class="n">pair_loop_map</span>
+<span class="n">diffloop</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">tl</span><span class="o">.</span><span class="n">DiffLoop</span><span class="p">(</span><span class="n">adata_astro</span><span class="p">,</span> <span class="n">oadata</span><span class="p">)</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">diffloop</span><span class="o">.</span><span class="n">diff_loops</span><span class="p">(</span><span class="n">loop_df</span><span class="p">[</span><span class="n">loop_df</span><span class="p">[</span><span class="s2">&quot;final&quot;</span><span class="p">]])</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">diffloop</span><span class="o">.</span><span class="n">to_bedpe</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">pair_loop_map</span><span class="p">(</span><span class="n">adata_astro</span><span class="p">,</span> <span class="n">oadata</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="s2">&quot;chr3&quot;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Astro versus Ex&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dire</span><span class="p">,</span> <span class="s2">&quot;Astro_Ex_Loop.pdf&quot;</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Found 0 differential loops, while 6 are not differential loops.
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/figures_3differential_20_1.png" src="../_images/figures_3differential_20_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="p">[[</span><span class="s2">&quot;c1&quot;</span><span class="p">,</span> <span class="s2">&quot;s1&quot;</span><span class="p">,</span> <span class="s2">&quot;e1&quot;</span><span class="p">,</span> <span class="s2">&quot;c2&quot;</span><span class="p">,</span> <span class="s2">&quot;s2&quot;</span><span class="p">,</span> <span class="s2">&quot;e2&quot;</span><span class="p">,</span> <span class="s2">&quot;fdr&quot;</span><span class="p">]]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>c1</th>
+      <th>s1</th>
+      <th>e1</th>
+      <th>c2</th>
+      <th>s2</th>
+      <th>e2</th>
+      <th>fdr</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>chr3</td>
+      <td>7675000</td>
+      <td>7700000</td>
+      <td>chr3</td>
+      <td>8475000</td>
+      <td>8500000</td>
+      <td>0.915455</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>chr3</td>
+      <td>7875000</td>
+      <td>7900000</td>
+      <td>chr3</td>
+      <td>8475000</td>
+      <td>8500000</td>
+      <td>0.915455</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>chr3</td>
+      <td>8375000</td>
+      <td>8400000</td>
+      <td>chr3</td>
+      <td>8475000</td>
+      <td>8500000</td>
+      <td>0.915455</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>chr3</td>
+      <td>8575000</td>
+      <td>8600000</td>
+      <td>chr3</td>
+      <td>8900000</td>
+      <td>8925000</td>
+      <td>0.915455</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>chr3</td>
+      <td>8575000</td>
+      <td>8600000</td>
+      <td>chr3</td>
+      <td>9050000</td>
+      <td>9075000</td>
+      <td>0.915455</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>chr3</td>
+      <td>8950000</td>
+      <td>8975000</td>
+      <td>chr3</td>
+      <td>9050000</td>
+      <td>9075000</td>
+      <td>0.243232</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">diffloop</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">tl</span><span class="o">.</span><span class="n">DiffLoop</span><span class="p">(</span><span class="n">adata_endo</span><span class="p">,</span> <span class="n">oadata</span><span class="p">)</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">diffloop</span><span class="o">.</span><span class="n">diff_loops</span><span class="p">(</span><span class="n">loop_df</span><span class="p">[</span><span class="n">loop_df</span><span class="p">[</span><span class="s2">&quot;final&quot;</span><span class="p">]])</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">diffloop</span><span class="o">.</span><span class="n">to_bedpe</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">pair_loop_map</span><span class="p">(</span><span class="n">adata_endo</span><span class="p">,</span> <span class="n">oadata</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="s2">&quot;chr3&quot;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Endo versus Ex&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dire</span><span class="p">,</span> <span class="s2">&quot;Endo_Ex_Loop.pdf&quot;</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Found 4 differential loops, while 2 are not differential loops.
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/figures_3differential_22_1.png" src="../_images/figures_3differential_22_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="p">[[</span><span class="s2">&quot;c1&quot;</span><span class="p">,</span> <span class="s2">&quot;s1&quot;</span><span class="p">,</span> <span class="s2">&quot;e1&quot;</span><span class="p">,</span> <span class="s2">&quot;c2&quot;</span><span class="p">,</span> <span class="s2">&quot;s2&quot;</span><span class="p">,</span> <span class="s2">&quot;e2&quot;</span><span class="p">,</span> <span class="s2">&quot;fdr&quot;</span><span class="p">]]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>c1</th>
+      <th>s1</th>
+      <th>e1</th>
+      <th>c2</th>
+      <th>s2</th>
+      <th>e2</th>
+      <th>fdr</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>chr3</td>
+      <td>7675000</td>
+      <td>7700000</td>
+      <td>chr3</td>
+      <td>8475000</td>
+      <td>8500000</td>
+      <td>0.041236</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>chr3</td>
+      <td>7875000</td>
+      <td>7900000</td>
+      <td>chr3</td>
+      <td>8475000</td>
+      <td>8500000</td>
+      <td>0.000067</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>chr3</td>
+      <td>8375000</td>
+      <td>8400000</td>
+      <td>chr3</td>
+      <td>8475000</td>
+      <td>8500000</td>
+      <td>0.014833</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>chr3</td>
+      <td>8575000</td>
+      <td>8600000</td>
+      <td>chr3</td>
+      <td>8900000</td>
+      <td>8925000</td>
+      <td>0.416674</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>chr3</td>
+      <td>8575000</td>
+      <td>8600000</td>
+      <td>chr3</td>
+      <td>9050000</td>
+      <td>9075000</td>
+      <td>0.037286</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>chr3</td>
+      <td>8950000</td>
+      <td>8975000</td>
+      <td>chr3</td>
+      <td>9050000</td>
+      <td>9075000</td>
+      <td>0.416674</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">diffloop</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">tl</span><span class="o">.</span><span class="n">DiffLoop</span><span class="p">(</span><span class="n">adata_astro</span><span class="p">,</span> <span class="n">oadata</span><span class="p">)</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">diffloop</span><span class="o">.</span><span class="n">diff_loops</span><span class="p">(</span><span class="n">loop_df</span><span class="p">[</span><span class="n">loop_df</span><span class="p">[</span><span class="s2">&quot;final&quot;</span><span class="p">]])</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">diffloop</span><span class="o">.</span><span class="n">to_bedpe</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">pair_loop_map</span><span class="p">(</span><span class="n">adata_endo</span><span class="p">,</span> <span class="n">oadata</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="s2">&quot;chr3&quot;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dire</span><span class="p">,</span> <span class="s2">&quot;Endo_Astro_Loop.pdf&quot;</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Found 0 differential loops, while 6 are not differential loops.
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/figures_3differential_24_1.png" src="../_images/figures_3differential_24_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">chr_id</span> <span class="ow">in</span> <span class="n">loader</span><span class="o">.</span><span class="n">chr_ids</span><span class="p">:</span>
+    <span class="n">adata</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">create_adata</span><span class="p">(</span><span class="n">chr_id</span><span class="p">)</span>
+    <span class="n">sf</span><span class="o">.</span><span class="n">pp</span><span class="o">.</span><span class="n">add_cell_type</span><span class="p">(</span><span class="n">adata</span><span class="p">,</span> <span class="n">celldfs</span><span class="p">,</span> <span class="s2">&quot;Cell_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;cluster label&quot;</span><span class="p">)</span>
+    <span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s2">&quot;cell_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s2">&quot;cluster label&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">celltype_dict</span><span class="p">)</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="n">adata</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s2">&quot;cell_type&quot;</span><span class="p">])</span>
+    <span class="n">d</span><span class="p">[</span><span class="s2">&quot;Chrom&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">chr_id</span>
+    <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">&quot;Chrom&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;Chrom&quot;</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[[</span><span class="sa">f</span><span class="s2">&quot;chr</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">20</span><span class="p">)]</span><span class="o">+</span><span class="p">[</span><span class="s2">&quot;chrX&quot;</span><span class="p">]]</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="n">cellText</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">colLabels</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">rowLabels</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">,</span>
+         <span class="n">cellLoc</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Number of Traces by Cell Types and Chromosomes&quot;</span><span class="p">,</span>
+             <span class="n">y</span><span class="o">=</span><span class="mf">1.02</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">out_fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dire</span><span class="p">,</span> <span class="s2">&quot;takei_science_count.pdf&quot;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">out_fname</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/figures_3differential_25_0.png" src="../_images/figures_3differential_25_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">dtree</span><span class="p">[</span><span class="s2">&quot;takei_nature_2021&quot;</span><span class="p">,</span><span class="s2">&quot;25Kb&quot;</span><span class="p">,</span><span class="s2">&quot;rep1&quot;</span><span class="p">],</span> <span class="n">skiprows</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
+<span class="n">cols</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">;</span> <span class="n">cols</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Spot_ID&quot;</span><span class="p">;</span> <span class="n">cols</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Extra_Cell_ROI_ID&quot;</span>
+<span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">cols</span><span class="p">;</span> <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span><span class="mi">8</span><span class="p">,:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="n">cellText</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">colLabels</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">cellLoc</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dire</span><span class="p">,</span> <span class="s2">&quot;fof_ct.pdf&quot;</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/figures_3differential_26_0.png" src="../_images/figures_3differential_26_0.png" />
+</div>
+</div>
+</section>
+<section id="129-and-CAST-allele">
+<h2>129 and CAST allele<a class="headerlink" href="#129-and-CAST-allele" title="Link to this heading">#</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dtree</span><span class="p">[</span><span class="s2">&quot;huang_ng_2021&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+{&#39;between&#39;: &#39;4DNFI2RCYFJU.csv&#39;,
+ &#39;between_rna&#39;: &#39;4DNFI9KE6AII.csv&#39;,
+ &#39;downstream&#39;: &#39;4DNFI5Y2PIJM.csv&#39;,
+ &#39;downstream_rna&#39;: &#39;4DNFIKPGMZJ8.csv&#39;,
+ &#39;between_mutant&#39;: &#39;4DNFIA8DHAFV.csv&#39;}
+</pre></div></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">between</span></code> and <code class="docutils literal notranslate"><span class="pre">between_rna</span></code> are the experimental groups. 4 CTCF binding sites are inserted between the Sox2 promoter and the super enhancer in the CAST allele. This should lower the Sox2 expression from CAST allele. <code class="docutils literal notranslate"><span class="pre">between_rna</span></code> also has Sox2 RNA expression level.</p>
+<p><code class="docutils literal notranslate"><span class="pre">downstream</span></code> and <code class="docutils literal notranslate"><span class="pre">downstream_rna</span></code> are the control groups. The CTCF binding sites are inserted downstream of the system instead of between the enhancer and the promoter. We expect no significant difference.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">loader_ng</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">pp</span><span class="o">.</span><span class="n">FOF_CT_Loader</span><span class="p">(</span><span class="n">dtree</span><span class="p">[</span><span class="s2">&quot;huang_ng_2021&quot;</span><span class="p">,</span><span class="s2">&quot;between_mutant&quot;</span><span class="p">])</span>
+<span class="n">adatab</span> <span class="o">=</span> <span class="n">loader_ng</span><span class="o">.</span><span class="n">create_adata</span><span class="p">(</span><span class="s2">&quot;chr3&quot;</span><span class="p">)</span>
+<span class="n">allele</span> <span class="o">=</span> <span class="n">adatab</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^\d+_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">adatab</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s2">&quot;allele&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">allele</span>
+<span class="n">adatab129</span> <span class="o">=</span> <span class="n">adatab</span><span class="p">[</span><span class="n">adatab</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s2">&quot;allele&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;129&quot;</span><span class="p">]</span>
+<span class="n">adatabcast</span> <span class="o">=</span> <span class="n">adatab</span><span class="p">[</span><span class="n">adatab</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s2">&quot;allele&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;CAST&quot;</span><span class="p">]</span>
+<span class="n">sf</span><span class="o">.</span><span class="n">pp</span><span class="o">.</span><span class="n">axis_weight</span><span class="p">(</span><span class="n">adatab</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/redfishhh/Documents/research/MultiplexedFISH/LoopTests/snapfish2/utils/load.py:207: UserWarning: FOF_CT-core data has less columns than what specified in the header. Additional columns will be ignored.
+  warnings.warn(
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+array([0.35155619, 0.36190932, 0.28653449])
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">adatab</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+AnnData object with n_obs × n_vars = 1318 × 41
+    obs: &#39;allele&#39;
+    var: &#39;Chrom_Start&#39;, &#39;Chrom_End&#39;
+    uns: &#39;Chrom&#39;
+    layers: &#39;X&#39;, &#39;Y&#39;, &#39;Z&#39;
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">sf</span><span class="o">.</span><span class="n">pl</span><span class="o">.</span><span class="n">pairwise_heatmap</span><span class="p">(</span><span class="n">sf</span><span class="o">.</span><span class="n">pp</span><span class="o">.</span><span class="n">median_pdist</span><span class="p">(</span><span class="n">adatab129</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                       <span class="n">title</span><span class="o">=</span><span class="s2">&quot;129 Allele&quot;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
+<span class="n">sf</span><span class="o">.</span><span class="n">pl</span><span class="o">.</span><span class="n">pairwise_heatmap</span><span class="p">(</span><span class="n">sf</span><span class="o">.</span><span class="n">pp</span><span class="o">.</span><span class="n">median_pdist</span><span class="p">(</span><span class="n">adatabcast</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                       <span class="n">title</span><span class="o">=</span><span class="s2">&quot;CAST Allele&quot;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/figures_3differential_32_0.png" src="../_images/figures_3differential_32_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">caller</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">tl</span><span class="o">.</span><span class="n">LoopCaller</span><span class="p">()</span>
+<span class="n">loop_res</span> <span class="o">=</span> <span class="n">caller</span><span class="o">.</span><span class="n">call_loops</span><span class="p">(</span><span class="n">adatab</span><span class="p">)</span>
+<span class="n">loop_df</span> <span class="o">=</span> <span class="n">caller</span><span class="o">.</span><span class="n">to_bedpe</span><span class="p">(</span><span class="n">loop_res</span><span class="p">,</span> <span class="n">adatab</span><span class="p">)</span>
+<span class="n">loop_df</span><span class="p">[</span><span class="n">loop_df</span><span class="p">[</span><span class="s2">&quot;final&quot;</span><span class="p">]]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>c1</th>
+      <th>s1</th>
+      <th>e1</th>
+      <th>c2</th>
+      <th>s2</th>
+      <th>e2</th>
+      <th>stat</th>
+      <th>pval</th>
+      <th>fdr</th>
+      <th>candidate</th>
+      <th>label</th>
+      <th>summit</th>
+      <th>final</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>344</th>
+      <td>chr3</td>
+      <td>34646078</td>
+      <td>34651078</td>
+      <td>chr3</td>
+      <td>34751078</td>
+      <td>34756078</td>
+      <td>7.096426e+11</td>
+      <td>4.485301e-13</td>
+      <td>1.036105e-10</td>
+      <td>True</td>
+      <td>1.0</td>
+      <td>True</td>
+      <td>True</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">row</span> <span class="o">=</span> <span class="n">loop_df</span><span class="p">[</span><span class="n">loop_df</span><span class="p">[</span><span class="s2">&quot;final&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">adatab</span><span class="o">.</span><span class="n">var</span><span class="p">[</span><span class="n">adatab</span><span class="o">.</span><span class="n">var</span><span class="p">[</span><span class="s2">&quot;Chrom_Start&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="n">row</span><span class="o">.</span><span class="n">s1</span><span class="p">,</span> <span class="n">row</span><span class="o">.</span><span class="n">s2</span><span class="p">])]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Chrom_Start</th>
+      <th>Chrom_End</th>
+    </tr>
+    <tr>
+      <th>locus</th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>loc9</th>
+      <td>34646078</td>
+      <td>34651078</td>
+    </tr>
+    <tr>
+      <th>loc30</th>
+      <td>34751078</td>
+      <td>34756078</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">caller</span><span class="o">.</span><span class="n">to_bedpe</span><span class="p">(</span><span class="n">caller</span><span class="o">.</span><span class="n">call_loops</span><span class="p">(</span><span class="n">adatab129</span><span class="p">),</span> <span class="n">adatab129</span><span class="p">)</span>
+<span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;summit&quot;</span><span class="p">]]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/redfishhh/Documents/research/MultiplexedFISH/LoopTests/snapfish2/utils/eval.py:187: ImplicitModificationWarning: Trying to modify attribute `._uns` of view, initializing view as actual.
+  adata.uns[&#34;weight&#34;] = {
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>c1</th>
+      <th>s1</th>
+      <th>e1</th>
+      <th>c2</th>
+      <th>s2</th>
+      <th>e2</th>
+      <th>stat</th>
+      <th>pval</th>
+      <th>fdr</th>
+      <th>candidate</th>
+      <th>label</th>
+      <th>summit</th>
+      <th>final</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>344</th>
+      <td>chr3</td>
+      <td>34646078</td>
+      <td>34651078</td>
+      <td>chr3</td>
+      <td>34751078</td>
+      <td>34756078</td>
+      <td>7.063764e+11</td>
+      <td>4.505285e-13</td>
+      <td>1.040721e-10</td>
+      <td>True</td>
+      <td>1.0</td>
+      <td>True</td>
+      <td>True</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">caller</span><span class="o">.</span><span class="n">to_bedpe</span><span class="p">(</span><span class="n">caller</span><span class="o">.</span><span class="n">call_loops</span><span class="p">(</span><span class="n">adatabcast</span><span class="p">),</span> <span class="n">adatabcast</span><span class="p">)</span>
+<span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;summit&quot;</span><span class="p">]]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/redfishhh/Documents/research/MultiplexedFISH/LoopTests/snapfish2/utils/eval.py:187: ImplicitModificationWarning: Trying to modify attribute `._uns` of view, initializing view as actual.
+  adata.uns[&#34;weight&#34;] = {
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>c1</th>
+      <th>s1</th>
+      <th>e1</th>
+      <th>c2</th>
+      <th>s2</th>
+      <th>e2</th>
+      <th>stat</th>
+      <th>pval</th>
+      <th>fdr</th>
+      <th>candidate</th>
+      <th>label</th>
+      <th>summit</th>
+      <th>final</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>344</th>
+      <td>chr3</td>
+      <td>34646078</td>
+      <td>34651078</td>
+      <td>chr3</td>
+      <td>34751078</td>
+      <td>34756078</td>
+      <td>6.705034e+11</td>
+      <td>4.747314e-13</td>
+      <td>1.096629e-10</td>
+      <td>True</td>
+      <td>1.0</td>
+      <td>True</td>
+      <td>True</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">diffloop</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">tl</span><span class="o">.</span><span class="n">DiffLoop</span><span class="p">(</span><span class="n">adatab129</span><span class="p">,</span> <span class="n">adatabcast</span><span class="p">)</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">diffloop</span><span class="o">.</span><span class="n">diff_loops</span><span class="p">(</span><span class="n">loop_df</span><span class="p">[</span><span class="n">loop_df</span><span class="p">[</span><span class="s2">&quot;final&quot;</span><span class="p">]])</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">diffloop</span><span class="o">.</span><span class="n">to_bedpe</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="n">df</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Found 1 differential loops, while 0 are not differential loops.
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>c1</th>
+      <th>s1</th>
+      <th>e1</th>
+      <th>c2</th>
+      <th>s2</th>
+      <th>e2</th>
+      <th>pval</th>
+      <th>fdr</th>
+      <th>log_fdr</th>
+      <th>diff</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>chr3</td>
+      <td>34646078</td>
+      <td>34651078</td>
+      <td>chr3</td>
+      <td>34751078</td>
+      <td>34756078</td>
+      <td>0.026092</td>
+      <td>0.026092</td>
+      <td>-3.646127</td>
+      <td>True</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="2tad_benchmark.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Domain Identification</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="4cpmt_benchmark.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">A/B Compartment Calling</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Differential-TAD-demo">Differential TAD demo</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Control-type-I-error-rate">Control type I error rate</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Differential-loop-demo">Differential loop demo</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#129-and-CAST-allele">129 and CAST allele</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2024, Hongyu Yu.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

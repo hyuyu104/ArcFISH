@@ -1,0 +1,6 @@
+﻿snapfish2.tl.all\_possible\_pairs
+=================================
+
+.. currentmodule:: snapfish2.tl
+
+.. autofunction:: all_possible_pairs

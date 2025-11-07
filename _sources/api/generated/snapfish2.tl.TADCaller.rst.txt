@@ -1,0 +1,38 @@
+﻿snapfish2.tl.TADCaller
+======================
+
+.. currentmodule:: snapfish2.tl
+
+.. autoclass:: TADCaller
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~TADCaller.__init__
+      ~TADCaller.by_insulation
+      ~TADCaller.by_pval
+      ~TADCaller.call_tads
+      ~TADCaller.to_bedpe
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~TADCaller.distance
+      ~TADCaller.fdr_cutoff
+      ~TADCaller.method
+      ~TADCaller.min_tad_size
+      ~TADCaller.prominence
+      ~TADCaller.tree
+      ~TADCaller.window
+   
+   

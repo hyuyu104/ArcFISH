@@ -1,0 +1,6 @@
+﻿arcfish.pp.add\_cell\_type
+==========================
+
+.. currentmodule:: arcfish.pp
+
+.. autofunction:: add_cell_type

@@ -1,0 +1,35 @@
+﻿snapfish2.tl.LoopCaller
+=======================
+
+.. currentmodule:: snapfish2.tl
+
+.. autoclass:: LoopCaller
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~LoopCaller.__init__
+      ~LoopCaller.call_loops
+      ~LoopCaller.spread_label
+      ~LoopCaller.to_bedpe
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~LoopCaller.fdr_cutoff
+      ~LoopCaller.gap
+      ~LoopCaller.loop_range
+      ~LoopCaller.outer_cut
+      ~LoopCaller.pval_cutoff
+   
+   

@@ -1,0 +1,6 @@
+﻿snapfish2.pp.add\_cell\_type
+============================
+
+.. currentmodule:: snapfish2.pp
+
+.. autofunction:: add_cell_type

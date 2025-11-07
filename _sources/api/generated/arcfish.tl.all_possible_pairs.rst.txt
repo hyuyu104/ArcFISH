@@ -1,0 +1,6 @@
+﻿arcfish.tl.all\_possible\_pairs
+===============================
+
+.. currentmodule:: arcfish.tl
+
+.. autofunction:: all_possible_pairs

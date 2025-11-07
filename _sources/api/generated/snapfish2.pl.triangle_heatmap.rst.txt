@@ -1,0 +1,6 @@
+﻿snapfish2.pl.triangle\_heatmap
+==============================
+
+.. currentmodule:: snapfish2.pl
+
+.. autofunction:: triangle_heatmap

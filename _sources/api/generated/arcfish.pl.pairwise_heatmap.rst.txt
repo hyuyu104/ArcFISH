@@ -1,0 +1,6 @@
+﻿arcfish.pl.pairwise\_heatmap
+============================
+
+.. currentmodule:: arcfish.pl
+
+.. autofunction:: pairwise_heatmap

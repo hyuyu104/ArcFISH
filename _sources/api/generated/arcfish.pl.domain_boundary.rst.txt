@@ -1,0 +1,6 @@
+﻿arcfish.pl.domain\_boundary
+===========================
+
+.. currentmodule:: arcfish.pl
+
+.. autofunction:: domain_boundary

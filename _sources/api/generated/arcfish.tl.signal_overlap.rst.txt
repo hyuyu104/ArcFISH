@@ -1,0 +1,6 @@
+﻿arcfish.tl.signal\_overlap
+==========================
+
+.. currentmodule:: arcfish.tl
+
+.. autofunction:: signal_overlap
