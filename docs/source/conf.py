@@ -12,7 +12,7 @@ print(sys.path)
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "SnapFISH2"
+project = "ArcFISH"
 copyright = "2024, Hongyu Yu"
 author = "Hongyu Yu"
 release = version = arcfish.__version__
@@ -92,8 +92,8 @@ html_show_sourcelink = False
 
 html_theme_options = {
     "logo": {
-        "text": "SnapFISH2",
-        "alt_text": "SnapFISH2",
+        "text": "ArcFISH",
+        "alt_text": "ArcFISH",
     },
     
     "github_url": "https://github.com/hyuhyu104/DNEYET",

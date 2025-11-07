@@ -1,8 +1,8 @@
-`snapfish2.pl`
+`arcfish.pl`
 ==============
 
 ```{eval-rst}
-.. currentmodule:: snapfish2
+.. currentmodule:: arcfish
 ```
 
 ```{eval-rst}

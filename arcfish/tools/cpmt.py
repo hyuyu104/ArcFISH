@@ -169,7 +169,7 @@ class ABCaller:
         ----------
         adata : AnnData
             adata of a single chromosome, created by 
-            :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+            :func:`arcfish.pp.FOF_CT_Loader.create_adata`.
 
         Returns
         -------
@@ -226,7 +226,7 @@ class ABCaller:
         ----------
         adata : AnnData
             adata of a single chromosome, created by 
-            :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+            :func:`arcfish.pp.FOF_CT_Loader.create_adata`.
 
         Returns
         -------
@@ -284,7 +284,7 @@ class ABCaller:
         ----------
         adata : AnnData
             adata of a single chromosome, created by 
-            :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+            :func:`arcfish.pp.FOF_CT_Loader.create_adata`.
 
         Returns
         -------

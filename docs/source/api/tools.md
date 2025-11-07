@@ -1,8 +1,8 @@
-`snapfish2.tl`
+`arcfish.tl`
 ==============
 
 ```{eval-rst}
-.. currentmodule:: snapfish2
+.. currentmodule:: arcfish
 ```
 
 ## Chromatin Loops

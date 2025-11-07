@@ -34,10 +34,10 @@ def pairwise_heatmap(
     ----------
     X1 : np.ndarray
         First heatmap data, passed to 
-        :func:`snapfish2.pl.cast_to_distmat`.
+        :func:`arcfish.pl.cast_to_distmat`.
     X2 : np.ndarray, optional
         Second data, passed to 
-        :func:`snapfish2.pl.cast_to_distmat`, by default None.
+        :func:`arcfish.pl.cast_to_distmat`, by default None.
     ax : plt.Axes, optional
         Axis to plot the heatmap, by default None.
     x : str, optional
@@ -159,7 +159,7 @@ def triangle_heatmap(
     df1d : pd.DataFrame
         1D genomic location information. Must contain "Chrom_Start" and
         "Chrom_End" as columns. Can first call 
-        :func:`snapfish2.pp.FOF_CT_Loader.create_adata` to 
+        :func:`arcfish.pp.FOF_CT_Loader.create_adata` to 
         create an adata object and then use the `var` field as `df1d`.
     cut_hi : None | float, optional
         Only pixels with 1D genomic distance below `cut_hi` will be 
@@ -349,7 +349,7 @@ def domain_boundary(
     ----------
     adata : AnnData
         Object created by 
-        :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+        :func:`arcfish.pp.FOF_CT_Loader.create_adata`.
     caller : TADCaller
         Instantiated TAD caller object.
     ax : plt.Axes | None, optional

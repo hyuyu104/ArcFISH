@@ -1,11 +1,11 @@
 # Workflow
 
-This page describes the workflow of developing the package on the server. I assume the current working directory is `/proj/yunligrp/users/hongyuyu/AxisWiseTest`. This is also the place where I put all SnapFISH2-related files.
+This page describes the workflow of developing the package on the server. I assume the current working directory is `/proj/yunligrp/users/hongyuyu/AxisWiseTest`. This is also the place where I put all ArcFISH-related files.
 
 To prepare your own directory, please copy the followings to your working directory:
 ```sh
 cd /YOUR/WKDIR
-cp -R /proj/yunligrp/users/hongyuyu/AxisWiseTest/snapfish2 .
+cp -R /proj/yunligrp/users/hongyuyu/AxisWiseTest/arcfish .
 cp /proj/yunligrp/users/hongyuyu/AxisWiseTest/pyproject.toml .
 cp /proj/yunligrp/users/hongyuyu/AxisWiseTest/README.md .
 cp /proj/yunligrp/users/hongyuyu/AxisWiseTest/LICENSE .
@@ -22,7 +22,7 @@ and follow the steps below.
 
 ## Local installation on longleaf
 
-On the longleaf server, load python environment and install `snapfish2` locally:
+On the longleaf server, load python environment and install `arcfish` locally:
 ```sh
 $ module load anaconda
 # /PYTHON/ENV/PATH is where the python environment will be created
@@ -33,7 +33,7 @@ $ conda activate /PYTHON/ENV/PATH
 # cd to the directory with pyproject.toml file
 $ ls
 > ... pyproject.toml ...
-# Install snapfish2 locally
+# Install arcfish locally
 $ python -m pip install -e ".[docs]"
 ```
 After these steps, the package should be installed in the environment `/PYTHON/ENV/PATH`. Note this is an editable installation, meaning that one does not need to re-install the package everytime the source code is changed.
@@ -102,14 +102,14 @@ After setting up the jupyter kernel, the `.ipynb` file can be run on the server.
 
 ## Changing source code and documentation pages
 
-The source code in the `snapfish2` folder can be edited directly. Some remarks on `snapfish2/__init__.py`:
+The source code in the `arcfish` folder can be edited directly. Some remarks on `arcfish/__init__.py`:
 ```python
 sys.modules.update({
     f"{__name__}.{m}": globals()[m]
     for m in ["pl", "tl", "loop", "domain"]
 })
 ```
-This explicitly adds the module names `snapfish2.pl`, `snapfish2.tl`, etc. Sphinx will not compile properly without explicitly adding the module names.
+This explicitly adds the module names `arcfish.pl`, `arcfish.tl`, etc. Sphinx will not compile properly without explicitly adding the module names.
 ```python
 __version__ = "2.0.0"
 ```
@@ -122,4 +122,4 @@ $ cd docs
 $ rm -r source/api/generated
 $ make clean && make html
 ```
-Note `autodoc` is run simultaneously so no need to add `sphinx-apidoc -o source/generated ../snapfish2`.
+Note `autodoc` is run simultaneously so no need to add `sphinx-apidoc -o source/generated ../arcfish`.

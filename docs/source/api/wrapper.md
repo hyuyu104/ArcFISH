@@ -1,8 +1,8 @@
-`snapfish2.wr`
+`arcfish.wr`
 ==============
 
 ```{eval-rst}
-.. currentmodule:: snapfish2
+.. currentmodule:: arcfish
 ```
 
 ## Tools Wrapper

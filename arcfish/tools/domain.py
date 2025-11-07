@@ -106,7 +106,7 @@ class TADCaller:
         ----------
         adata : AnnData
             adata of a single chromosome, created by 
-            :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+            :func:`arcfish.pp.FOF_CT_Loader.create_adata`.
 
         Returns
         -------
@@ -131,7 +131,7 @@ class TADCaller:
         ----------
         adata : AnnData
             adata of a single chromosome, created by 
-            :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+            :func:`arcfish.pp.FOF_CT_Loader.create_adata`.
 
         Returns
         -------
@@ -221,7 +221,7 @@ class TADCaller:
         ----------
         adata : AnnData
             adata of a single chromosome, created by 
-            :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+            :func:`arcfish.pp.FOF_CT_Loader.create_adata`.
 
         Returns
         -------
@@ -411,7 +411,7 @@ class DiffRegion(DiffLoop):
             Weight for each axis.
         f_pvals : (d, p, p) np.ndarray
             Entry-wise p-values returned by 
-            func:`snapfish2.analysis.loop.DiffLoop.entry_pvals`.
+            func:`arcfish.analysis.loop.DiffLoop.entry_pvals`.
         d1d : np.ndarray
             1D genomic locations.
         region_df : pd.DataFrame

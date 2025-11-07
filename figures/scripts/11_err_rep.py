@@ -114,7 +114,7 @@ if __name__ == "__main__":
         loader = af.pp.FOF_CT_Loader({
             "rep1": f"{wkdir}/data/takei_nature_2021/4DNFIHF3JCBY.csv",
             "rep2": f"{wkdir}/data/takei_nature_2021/4DNFIQXONUUH.csv",
-        }, voxel_ratio={c: 1000 for c in "XYZ"})
+        }, nm_ratio={c: 1000 for c in "XYZ"})
 
         chrom = f"chr{a}"
         adata = loader.create_adata(chrom)

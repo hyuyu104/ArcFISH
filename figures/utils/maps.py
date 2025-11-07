@@ -128,9 +128,9 @@ def loop_map(loader, chr_id, fithic2, hicexpl, res_sf1, res_sf2):
     sf.pl.compare_loops(hicexpl, res_sf1[res_sf1["final"]], chr_id, 
                         "HiCExplorer", "SnapFISH", ax=axes[1])
     sf.pl.compare_loops(fithic2, res_sf2[res_sf2["final"]], chr_id, 
-                        "FitHiC2", "SnapFISH2", ax=axes[2])
+                        "FitHiC2", "ArcFISH", ax=axes[2])
     sf.pl.compare_loops(hicexpl, res_sf2[res_sf2["final"]], chr_id, 
-                        "HiCExplorer", "SnapFISH2", ax=axes[3])
+                        "HiCExplorer", "ArcFISH", ax=axes[3])
     for ax in axes:
         ax.get_legend().remove()
     return fig

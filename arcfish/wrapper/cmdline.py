@@ -18,22 +18,22 @@ def _parse_file_paths(file_paths):
     return file_paths
 
 
-def _parse_vocel_ratio(voxel_ratio):
+def _parse_vocel_ratio(nm_ratio):
     return {
         v.split("::")[0].strip(): float(v.split("::")[1])
-        for v in voxel_ratio.split(",")
+        for v in nm_ratio.split(",")
     }
 
 
 def preprocess(args):
     input = _parse_file_paths(args.input)
     output = args.output
-    voxel_ratio = args.voxel_ratio
-    if voxel_ratio is not None:
-        voxel_ratio = _parse_vocel_ratio(voxel_ratio)
+    nm_ratio = args.nm_ratio
+    if nm_ratio is not None:
+        nm_ratio = _parse_vocel_ratio(nm_ratio)
     loader = pp.FOF_CT_Loader(
         path=input, 
-        voxel_ratio=voxel_ratio
+        nm_ratio=nm_ratio
     )
     if not os.path.exists(output):
         os.mkdir(output)
@@ -149,13 +149,13 @@ def diff_domains(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="CLI for SnapFISH2.")
+    parser = argparse.ArgumentParser(description="CLI for ArcFISH.")
     subparsers = parser.add_subparsers(dest="command", required=True)
     
     parser_pp = subparsers.add_parser("preprocess", help="Preprocess data.")
     parser_pp.add_argument("-i", "--input", type=str, required=True)
     parser_pp.add_argument("-o", "--output", type=str, required=True)
-    parser_pp.add_argument("-v", "--voxel_ratio", type=str, default=None)
+    parser_pp.add_argument("-v", "--nm_ratio", type=str, default=None)
     parser_pp.set_defaults(func=preprocess)
     
     parser_lp = subparsers.add_parser("loop", help="Call loops.")

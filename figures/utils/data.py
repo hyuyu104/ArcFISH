@@ -154,7 +154,7 @@ def filter_save(
     
 
 def add_noise(
-    input_paths:str|list|dict, voxel_ratio:dict, 
+    input_paths:str|list|dict, nm_ratio:dict, 
     out_paths:str|list|dict, noises:dict
 ):
     """Add noises and save the noised data in the original scale (need
@@ -170,10 +170,10 @@ def add_noise(
     for k, v in input_paths.items():
         loader = af.pp.FOF_CT_Loader(v)
         data = loader.read_data()
-        for axis in voxel_ratio:
-            data[axis] *= voxel_ratio[axis]
+        for axis in nm_ratio:
+            data[axis] *= nm_ratio[axis]
             data[axis] += stats.norm.rvs(size=(len(data)), scale=noises[axis])
-            data[axis] /= voxel_ratio[axis]
+            data[axis] /= nm_ratio[axis]
         af.pp.save_fof_ct_core(data, loader.info, out_paths[k])
     
 ########################################################################

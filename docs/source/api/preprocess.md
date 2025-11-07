@@ -1,8 +1,8 @@
-`snapfish2.pp`
+`arcfish.pp`
 ==============
 
 ```{eval-rst}
-.. currentmodule:: snapfish2
+.. currentmodule:: arcfish
 ```
 
 ## Data loading

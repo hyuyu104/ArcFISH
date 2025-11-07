@@ -23,7 +23,7 @@ class LoopTestAbstract(ABC):
     ----------
     adata : AnnData
         adata of a single chromosome, created by 
-        :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+        :func:`arcfish.pp.FOF_CT_Loader.create_adata`.
     """
     @abstractmethod
     def __init__(self, adata:AnnData):
@@ -113,7 +113,7 @@ class TwoSampleT(LoopTestAbstract):
     ----------
     adata : AnnData
         adata of a single chromosome, created by 
-        :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+        :func:`arcfish.pp.FOF_CT_Loader.create_adata`.
     """
     def __init__(self, adata:AnnData):
         self._d1d = adata.var["Chrom_Start"].values
@@ -260,7 +260,7 @@ class AxisWiseF(LoopTestAbstract):
     ----------
     adata : AnnData
         adata of a single chromosome, created by 
-        :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+        :func:`arcfish.pp.FOF_CT_Loader.create_adata`.
     """
     def __init__(self, adata:AnnData):
         self._d1d = adata.var["Chrom_Start"].values
@@ -493,7 +493,7 @@ class LoopCaller:
         ----------
         adata : AnnData
             adata of a single chromosome, created by 
-            :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+            :func:`arcfish.pp.FOF_CT_Loader.create_adata`.
 
         Returns
         -------
@@ -594,7 +594,7 @@ class LoopCaller:
             Output from :func:`LoopCaller.loops_from_single_chr`.
         adata : AnnData
             adata of a single chromosome, created by 
-            :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+            :func:`arcfish.pp.FOF_CT_Loader.create_adata`.
             
         Returns
         -------
@@ -631,10 +631,10 @@ class DiffLoop:
     ----------
     adata1 : pd.DataFrame
         Condition 1 data adata created by 
-        :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+        :func:`arcfish.pp.FOF_CT_Loader.create_adata`.
     adata2 : pd.DataFrame
         Condition 2 data adata created by 
-        :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+        :func:`arcfish.pp.FOF_CT_Loader.create_adata`.
     """
     def __init__(
         self, 
@@ -701,10 +701,10 @@ class DiffLoop:
         ----------
         adata1 : pd.DataFrame
             Condition 1 data adata created by 
-            :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+            :func:`arcfish.pp.FOF_CT_Loader.create_adata`.
         adata2 : pd.DataFrame
             Condition 2 data adata created by 
-            :func:`snapfish2.pp.FOF_CT_Loader.create_adata`.
+            :func:`arcfish.pp.FOF_CT_Loader.create_adata`.
 
         Returns
         -------

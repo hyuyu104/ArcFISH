@@ -34,7 +34,7 @@ def main(out_dire, data_dire):
         'rep1': f'{data_dire}/takei_science_2021/4DNFIW4S8M6J.csv',
         'rep2': f'{data_dire}/takei_science_2021/4DNFI4LI6NNV.csv',
         'rep3': f'{data_dire}/takei_science_2021/4DNFIDUJQDNO.csv'
-    }, voxel_ratio={"X": 1000, "Y": 1000, "Z": 1000}, obs_cols_add=["Cell_ID"])
+    }, nm_ratio={"X": 1000, "Y": 1000, "Z": 1000}, obs_cols_add=["Cell_ID"])
     
     celldfs = af.pp.FOF_CT_Loader({
         'rep1': f'{data_dire}/takei_science_2021/4DNFIG1KETHF.csv',

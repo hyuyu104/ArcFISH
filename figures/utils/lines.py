@@ -13,7 +13,7 @@ import pyBigWig
 import arcfish as sf
 
 
-CMAP = {"SnapFISH": "darkorange", "SnapFISH2": "darkgreen"}
+CMAP = {"SnapFISH": "darkorange", "ArcFISH": "darkgreen"}
 
 
 def chiapet_count_pl(chiapet_path:Path, fig:plt.figure):
@@ -98,7 +98,7 @@ def precision_recall_loop(res1, res2, true_df, ax):
         )[:2]).T, columns=["Precisoin", "# True Loops"])
         # Display the actual number of overlapped loops
         df["# True Loops"] *= np.sum(res_df["overlapped"]==3)
-        df["Method"] = ["SnapFISH", "SnapFISH2"][i]
+        df["Method"] = ["SnapFISH", "ArcFISH"][i]
         plt_df.append(df)
     plt_df = pd.concat(plt_df, ignore_index=True)
     sns.lineplot(
@@ -135,7 +135,7 @@ def domain_chipseq_barplot(enrich_df, ax):
         enrich_df[enrich_df["Method"]!="Average"], x="marker",
         y="frac", hue="Method", ax=ax, width=.6, dodge=True, gap=.2,
         alpha=.8, edgecolor="k", linewidth=1,  
-        palette={"SnapFISH": "darkorange", "SnapFISH2": "darkgreen"},
+        palette={"SnapFISH": "darkorange", "ArcFISH": "darkgreen"},
     )
     for con in ax.containers:
         ax.bar_label(con, labels=con.datavalues.round(2), fontsize=8, padding=1)
@@ -143,10 +143,10 @@ def domain_chipseq_barplot(enrich_df, ax):
         ax.plot([-.3+i, .3+i], [r["frac"], r["frac"]], ".--k", label="t")
 
     n1 = enrich_df[enrich_df["Method"]=="SnapFISH"]["total"].iloc[0]
-    n2 = enrich_df[enrich_df["Method"]=="SnapFISH2"]["total"].iloc[0]
+    n2 = enrich_df[enrich_df["Method"]=="ArcFISH"]["total"].iloc[0]
     label_dict = {
         "SnapFISH": f"Insulation Scores ({n1} Boundaries)",
-        "SnapFISH2": f"SnapFISH2 ({n2} Boundaries)",
+        "ArcFISH": f"ArcFISH ({n2} Boundaries)",
         "t": "Average (Boundary & Non-Boundary)"
     }
     handles, labels = ax.get_legend_handles_labels()

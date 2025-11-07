@@ -90,7 +90,7 @@ def create_roc_df(
     df1 = pd.DataFrame(roc_curve(rr["loop"], rr["thresh1"])[:-1]).T
     df1["Method"] = "SnapFISH"
     df2 = pd.DataFrame(roc_curve(rr["loop"], rr["thresh2"])[:-1]).T
-    df2["Method"] = "SnapFISH2"
+    df2["Method"] = "ArcFISH"
     df = pd.concat([df1, df2], ignore_index=True)
     df.columns = ["FPR", "TPR", "Method"]
     return df

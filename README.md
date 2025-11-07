@@ -1,11 +1,11 @@
-SnapFISH2: An integrative analysis tool for multiplexed FISH
+ArcFISH: An integrative analysis tool for multiplexed FISH
 ============================================================
 
 > To view the full html documentation, download `docs/build` and open `docs/build/html/index.html` in any browser.
 
 ## Local installation on server
 
-On the longleaf server, load python environment and install `snapfish2` locally:
+On the longleaf server, load python environment and install `arcfish` locally:
 ```sh
 module load anaconda
 # /PYTHON/ENV/PATH is where the python environment will be created
@@ -16,7 +16,7 @@ conda activate /PYTHON/ENV/PATH
 # cd to the directory with pyproject.toml file
 ls
 > ... pyproject.toml ...
-# Install snapfish2 locally
+# Install arcfish locally
 python -m pip install -e .
 ```
 After these steps, the package should be installed in the environment `/PYTHON/ENV/PATH`.
