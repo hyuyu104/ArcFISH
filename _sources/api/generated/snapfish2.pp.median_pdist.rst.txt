@@ -1,6 +1,0 @@
-﻿snapfish2.pp.median\_pdist
-==========================
-
-.. currentmodule:: snapfish2.pp
-
-.. autofunction:: median_pdist

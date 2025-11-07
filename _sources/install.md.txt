@@ -1,22 +1,22 @@
 # Installation
 
-## Create an environment and install SnapFISH2
+## Create an environment and install ArcFISH
 
-It is recommended to first create a new Python environment and then install `SnapFISH2`. This can be accomplished either by `conda` or Python's `venv`:
+It is recommended to first create a new Python environment and then install `ArcFISH`. This can be accomplished either by `conda` or Python's `venv`:
 ::::{tabs}
 :::{group-tab} conda
 ```sh
-conda create --name snapfish2_env python==3.12.2
-conda activate snapfish2_env
-python -m pip install snapfish2
+conda create --name arcfish_env python==3.12.2
+conda activate arcfish_env
+python -m pip install arcfish
 ```
 :::
 
 :::{group-tab} venv
 ```sh
-python -m venv snapfish2_env
-source .snapfish2_env/bin/activate
-python -m pip install snapfish2
+python -m venv arcfish_env
+source .arcfish_env/bin/activate
+python -m pip install arcfish
 ```
 :::
 ::::
@@ -27,20 +27,20 @@ To install the latest version on github and the dependencies to build the sphinx
 ::::{tabs}
 :::{group-tab} conda
 ```sh
-conda create --name snapfish2_env python==3.12.2
-conda activate snapfish2_env
-git clone https://github.com/hyuyu104/snapfish2
-cd snapfish2
+conda create --name arcfish_env python==3.12.2
+conda activate arcfish_env
+git clone https://github.com/hyuyu104/arcfish
+cd arcfish
 python -m pip install -e ".[docs]"
 ```
 :::
 
 :::{group-tab} venv
 ```sh
-python -m venv snapfish2_env
-source .snapfish2_env/bin/activate
-git clone https://github.com/hyuyu104/snapfish2
-cd snapfish2
+python -m venv arcfish_env
+source .arcfish_env/bin/activate
+git clone https://github.com/hyuyu104/arcfish
+cd arcfish
 python -m pip install -e ".[docs]"
 ```
 :::

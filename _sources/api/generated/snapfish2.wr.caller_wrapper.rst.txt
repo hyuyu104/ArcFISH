@@ -1,6 +1,0 @@
-﻿snapfish2.wr.caller\_wrapper
-============================
-
-.. currentmodule:: snapfish2.wr
-
-.. autofunction:: caller_wrapper

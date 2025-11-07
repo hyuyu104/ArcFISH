@@ -1,6 +1,0 @@
-﻿snapfish2.pl.pairwise\_heatmap
-==============================
-
-.. currentmodule:: snapfish2.pl
-
-.. autofunction:: pairwise_heatmap

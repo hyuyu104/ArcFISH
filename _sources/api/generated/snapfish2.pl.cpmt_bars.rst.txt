@@ -1,6 +1,0 @@
-﻿snapfish2.pl.cpmt\_bars
-=======================
-
-.. currentmodule:: snapfish2.pl
-
-.. autofunction:: cpmt_bars

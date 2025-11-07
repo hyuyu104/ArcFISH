@@ -1,6 +1,0 @@
-﻿snapfish2.pl.background\_model
-==============================
-
-.. currentmodule:: snapfish2.pl
-
-.. autofunction:: background_model

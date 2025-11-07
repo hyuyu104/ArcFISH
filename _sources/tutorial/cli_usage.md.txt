@@ -1,21 +1,21 @@
-# SnapFISH2 as a command line tool
+# ArcFISH as a command line tool
 
-Here we demonstrate how to use SnapFISH2 as a command line tool. Make sure `snapfish2` is successfully installed (see [installation](../install.md)) and activate the environment with SnapFISH2 in shell:
+Here we demonstrate how to use ArcFISH as a command line tool. Make sure `arcfish` is successfully installed (see [installation](../install.md)) and activate the environment with ArcFISH in shell:
 ::::{tabs}
 :::{group-tab} conda
 ```sh
->>> conda activate snapfish2_env
->>> python -m pip show snapfish2
-Name: snapfish2
+>>> conda activate arcfish_env
+>>> python -m pip show arcfish
+Name: arcfish
 Version: ...
 ```
 :::
 
 :::{group-tab} venv
 ```sh
->>> source .snapfish2_env/bin/activate
->>> python -m pip show snapfish2
-Name: snapfish2
+>>> source .arcfish_env/bin/activate
+>>> python -m pip show arcfish
+Name: arcfish
 Version: ...
 ```
 :::
@@ -38,7 +38,7 @@ Download the data and place them like the following:
 
 First run the following to preprocess the data and store them as `AnnData` objects:
 ```sh
-snapfish2 preprocess \
+arcfish preprocess \
     -i "rep1::data/takei_science_2021/4DNFIW4S8M6J.csv,\
         rep2::data/takei_science_2021/4DNFI4LI6NNV.csv,\
         rep3::data/takei_science_2021/4DNFIDUJQDNO.csv" \
@@ -53,7 +53,7 @@ This step creates a directory `pp_chr_adata` with a `.h5ad` file for each chromo
 
 Once the processed data are stored in `pp_chr_adata`, loop calling can be done by
 ```sh
-snapfish2 loop -i pp_chr_adata -o output/loop_res.bedpe
+arcfish loop -i pp_chr_adata -o output/loop_res.bedpe
 ```
 which stores the loop calling result to `output/loop_res.bedpe`.
 
@@ -68,14 +68,14 @@ If desired, loop calling parameters can be changed by adding additional argument
 
 For example, to test loops with range from 10Kb to 2Mb, change the command to
 ```sh
-snapfish2 loop -i pp_chr_adata -o output/loop_res.bedpe -lo 10000 -up 1000000
+arcfish loop -i pp_chr_adata -o output/loop_res.bedpe -lo 10000 -up 1000000
 ```
 
 ## Domain calling
 
 To call TADs, run the following
 ```sh
-snapfish2 domain -i pp_chr_adata -o output/domain_res.bedpe
+arcfish domain -i pp_chr_adata -o output/domain_res.bedpe
 ```
 The domain calling result is in `output/domain_res.bedpe`.
 
@@ -90,7 +90,7 @@ Additional optional arguments for TAD calling are:
 
 To call A/B compartments, run the following
 ```sh
-snapfish2 cpmt -i pp_chr_adata -o output/cpmt_res.bedpe
+arcfish cpmt -i pp_chr_adata -o output/cpmt_res.bedpe
 ```
 An optional `-min` argument can be passed in to specify the minimum A/B compartment size, by default 0.
 

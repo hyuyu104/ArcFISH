@@ -1,6 +1,0 @@
-﻿snapfish2.pl.cast\_to\_distmat
-==============================
-
-.. currentmodule:: snapfish2.pl
-
-.. autofunction:: cast_to_distmat

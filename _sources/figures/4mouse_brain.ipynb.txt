@@ -1490,7 +1490,7 @@
      "name": "stderr",
      "output_type": "stream",
      "text": [
-      "/Users/redfishhh/Documents/research/MultiplexedFISH/SnapFISH2/snapfish2/utils/eval.py:34: ImplicitModificationWarning: Setting element `.varp['raw_var_X']` of view, initializing view as actual.\n",
+      "/Users/redfishhh/Documents/research/MultiplexedFISH/ArcFISH/arcfish/utils/eval.py:34: ImplicitModificationWarning: Setting element `.varp['raw_var_X']` of view, initializing view as actual.\n",
       "  adata.varp[f\"raw_var_{v}\"] = raw_var[i]\n"
      ]
     }

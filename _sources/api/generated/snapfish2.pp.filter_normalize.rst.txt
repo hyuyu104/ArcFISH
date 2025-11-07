@@ -1,6 +1,0 @@
-﻿snapfish2.pp.filter\_normalize
-==============================
-
-.. currentmodule:: snapfish2.pp
-
-.. autofunction:: filter_normalize

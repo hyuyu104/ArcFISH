@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Workflow &#8212; SnapFISH2 2.0.0 documentation</title>
+    <title>Workflow &#8212; ArcFISH 2.0.0 documentation</title>
   
   
   
@@ -116,7 +116,7 @@
   
   
   
-    <p class="title logo__title">SnapFISH2</p>
+    <p class="title logo__title">ArcFISH</p>
   
 </a></div>
     
@@ -399,10 +399,10 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="workflow">
 <h1>Workflow<a class="headerlink" href="#workflow" title="Link to this heading">#</a></h1>
-<p>This page describes the workflow of developing the package on the server. I assume the current working directory is <code class="docutils literal notranslate"><span class="pre">/proj/yunligrp/users/hongyuyu/AxisWiseTest</span></code>. This is also the place where I put all SnapFISH2-related files.</p>
+<p>This page describes the workflow of developing the package on the server. I assume the current working directory is <code class="docutils literal notranslate"><span class="pre">/proj/yunligrp/users/hongyuyu/AxisWiseTest</span></code>. This is also the place where I put all ArcFISH-related files.</p>
 <p>To prepare your own directory, please copy the followings to your working directory:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>/YOUR/WKDIR
-cp<span class="w"> </span>-R<span class="w"> </span>/proj/yunligrp/users/hongyuyu/AxisWiseTest/snapfish2<span class="w"> </span>.
+cp<span class="w"> </span>-R<span class="w"> </span>/proj/yunligrp/users/hongyuyu/AxisWiseTest/arcfish<span class="w"> </span>.
 cp<span class="w"> </span>/proj/yunligrp/users/hongyuyu/AxisWiseTest/pyproject.toml<span class="w"> </span>.
 cp<span class="w"> </span>/proj/yunligrp/users/hongyuyu/AxisWiseTest/README.md<span class="w"> </span>.
 cp<span class="w"> </span>/proj/yunligrp/users/hongyuyu/AxisWiseTest/LICENSE<span class="w"> </span>.
@@ -419,7 +419,7 @@ cp<span class="w"> </span>-R<span class="w"> </span>/proj/yunligrp/users/hongyuy
 <p>and follow the steps below.</p>
 <section id="local-installation-on-longleaf">
 <h2>Local installation on longleaf<a class="headerlink" href="#local-installation-on-longleaf" title="Link to this heading">#</a></h2>
-<p>On the longleaf server, load python environment and install <code class="docutils literal notranslate"><span class="pre">snapfish2</span></code> locally:</p>
+<p>On the longleaf server, load python environment and install <code class="docutils literal notranslate"><span class="pre">arcfish</span></code> locally:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>module<span class="w"> </span>load<span class="w"> </span>anaconda
 <span class="c1"># /PYTHON/ENV/PATH is where the python environment will be created</span>
 <span class="c1"># Change this to your own directory to create your environment</span>
@@ -429,7 +429,7 @@ $<span class="w"> </span>conda<span class="w"> </span>activate<span class="w"> <
 <span class="c1"># cd to the directory with pyproject.toml file</span>
 $<span class="w"> </span>ls
 &gt;<span class="w"> </span>...<span class="w"> </span>pyproject.toml<span class="w"> </span>...
-<span class="c1"># Install snapfish2 locally</span>
+<span class="c1"># Install arcfish locally</span>
 $<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[docs]&quot;</span>
 </pre></div>
 </div>
@@ -497,14 +497,14 @@ $<span class="w"> </span>jupyter<span class="w"> </span>notebook
 </section>
 <section id="changing-source-code-and-documentation-pages">
 <h2>Changing source code and documentation pages<a class="headerlink" href="#changing-source-code-and-documentation-pages" title="Link to this heading">#</a></h2>
-<p>The source code in the <code class="docutils literal notranslate"><span class="pre">snapfish2</span></code> folder can be edited directly. Some remarks on <code class="docutils literal notranslate"><span class="pre">snapfish2/__init__.py</span></code>:</p>
+<p>The source code in the <code class="docutils literal notranslate"><span class="pre">arcfish</span></code> folder can be edited directly. Some remarks on <code class="docutils literal notranslate"><span class="pre">arcfish/__init__.py</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="nb">globals</span><span class="p">()[</span><span class="n">m</span><span class="p">]</span>
     <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;pl&quot;</span><span class="p">,</span> <span class="s2">&quot;tl&quot;</span><span class="p">,</span> <span class="s2">&quot;loop&quot;</span><span class="p">,</span> <span class="s2">&quot;domain&quot;</span><span class="p">]</span>
 <span class="p">})</span>
 </pre></div>
 </div>
-<p>This explicitly adds the module names <code class="docutils literal notranslate"><span class="pre">snapfish2.pl</span></code>, <code class="docutils literal notranslate"><span class="pre">snapfish2.tl</span></code>, etc. Sphinx will not compile properly without explicitly adding the module names.</p>
+<p>This explicitly adds the module names <code class="docutils literal notranslate"><span class="pre">arcfish.pl</span></code>, <code class="docutils literal notranslate"><span class="pre">arcfish.tl</span></code>, etc. Sphinx will not compile properly without explicitly adding the module names.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;2.0.0&quot;</span>
 </pre></div>
 </div>
@@ -516,7 +516,7 @@ $<span class="w"> </span>rm<span class="w"> </span>-r<span class="w"> </span>sou
 $<span class="w"> </span>make<span class="w"> </span>clean<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span>html
 </pre></div>
 </div>
-<p>Note <code class="docutils literal notranslate"><span class="pre">autodoc</span></code> is run simultaneously so no need to add <code class="docutils literal notranslate"><span class="pre">sphinx-apidoc</span> <span class="pre">-o</span> <span class="pre">source/generated</span> <span class="pre">../snapfish2</span></code>.</p>
+<p>Note <code class="docutils literal notranslate"><span class="pre">autodoc</span></code> is run simultaneously so no need to add <code class="docutils literal notranslate"><span class="pre">sphinx-apidoc</span> <span class="pre">-o</span> <span class="pre">source/generated</span> <span class="pre">../arcfish</span></code>.</p>
 </section>
 </section>
 

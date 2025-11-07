@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>SnapFISH2 as a command line tool &#8212; SnapFISH2 2.0.0 documentation</title>
+    <title>ArcFISH as a command line tool &#8212; ArcFISH 2.0.0 documentation</title>
   
   
   
@@ -118,7 +118,7 @@
   
   
   
-    <p class="title logo__title">SnapFISH2</p>
+    <p class="title logo__title">ArcFISH</p>
   
 </a></div>
     
@@ -353,7 +353,7 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">SnapFISH2 as a command line tool</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">ArcFISH as a command line tool</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="load_storage.html">Data loading</a></li>
@@ -400,7 +400,7 @@
     
     <li class="breadcrumb-item"><a href="index.html" class="nav-link">Tutorials</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">SnapFISH2 as a command line tool</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">ArcFISH as a command line tool</span></li>
   </ul>
 </nav>
 </div>
@@ -417,19 +417,19 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section class="tex2jax_ignore mathjax_ignore" id="snapfish2-as-a-command-line-tool">
-<h1>SnapFISH2 as a command line tool<a class="headerlink" href="#snapfish2-as-a-command-line-tool" title="Link to this heading">#</a></h1>
-<p>Here we demonstrate how to use SnapFISH2 as a command line tool. Make sure <code class="docutils literal notranslate"><span class="pre">snapfish2</span></code> is successfully installed (see <a class="reference internal" href="../install.html"><span class="std std-doc">installation</span></a>) and activate the environment with SnapFISH2 in shell:</p>
+  <section class="tex2jax_ignore mathjax_ignore" id="arcfish-as-a-command-line-tool">
+<h1>ArcFISH as a command line tool<a class="headerlink" href="#arcfish-as-a-command-line-tool" title="Link to this heading">#</a></h1>
+<p>Here we demonstrate how to use ArcFISH as a command line tool. Make sure <code class="docutils literal notranslate"><span class="pre">arcfish</span></code> is successfully installed (see <a class="reference internal" href="../install.html"><span class="std std-doc">installation</span></a>) and activate the environment with ArcFISH in shell:</p>
 <div class="sphinx-tabs docutils container">
-<div aria-label="Tabbed content" class="closeable" role="tablist"><button aria-controls="panel-0-Y29uZGE=" aria-selected="true" class="sphinx-tabs-tab group-tab" id="tab-0-Y29uZGE=" name="Y29uZGE=" role="tab" tabindex="0">conda</button><button aria-controls="panel-0-dmVudg==" aria-selected="false" class="sphinx-tabs-tab group-tab" id="tab-0-dmVudg==" name="dmVudg==" role="tab" tabindex="-1">venv</button></div><div aria-labelledby="tab-0-Y29uZGE=" class="sphinx-tabs-panel group-tab" id="panel-0-Y29uZGE=" name="Y29uZGE=" role="tabpanel" tabindex="0"><div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>&gt;&gt;&gt;<span class="w"> </span>conda<span class="w"> </span>activate<span class="w"> </span>snapfish2_env
-&gt;&gt;&gt;<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>show<span class="w"> </span>snapfish2
-Name:<span class="w"> </span>snapfish2
+<div aria-label="Tabbed content" class="closeable" role="tablist"><button aria-controls="panel-0-Y29uZGE=" aria-selected="true" class="sphinx-tabs-tab group-tab" id="tab-0-Y29uZGE=" name="Y29uZGE=" role="tab" tabindex="0">conda</button><button aria-controls="panel-0-dmVudg==" aria-selected="false" class="sphinx-tabs-tab group-tab" id="tab-0-dmVudg==" name="dmVudg==" role="tab" tabindex="-1">venv</button></div><div aria-labelledby="tab-0-Y29uZGE=" class="sphinx-tabs-panel group-tab" id="panel-0-Y29uZGE=" name="Y29uZGE=" role="tabpanel" tabindex="0"><div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>&gt;&gt;&gt;<span class="w"> </span>conda<span class="w"> </span>activate<span class="w"> </span>arcfish_env
+&gt;&gt;&gt;<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>show<span class="w"> </span>arcfish
+Name:<span class="w"> </span>arcfish
 Version:<span class="w"> </span>...
 </pre></div>
 </div>
-</div><div aria-labelledby="tab-0-dmVudg==" class="sphinx-tabs-panel group-tab" hidden="true" id="panel-0-dmVudg==" name="dmVudg==" role="tabpanel" tabindex="0"><div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>&gt;&gt;&gt;<span class="w"> </span><span class="nb">source</span><span class="w"> </span>.snapfish2_env/bin/activate
-&gt;&gt;&gt;<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>show<span class="w"> </span>snapfish2
-Name:<span class="w"> </span>snapfish2
+</div><div aria-labelledby="tab-0-dmVudg==" class="sphinx-tabs-panel group-tab" hidden="true" id="panel-0-dmVudg==" name="dmVudg==" role="tabpanel" tabindex="0"><div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>&gt;&gt;&gt;<span class="w"> </span><span class="nb">source</span><span class="w"> </span>.arcfish_env/bin/activate
+&gt;&gt;&gt;<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>show<span class="w"> </span>arcfish
+Name:<span class="w"> </span>arcfish
 Version:<span class="w"> </span>...
 </pre></div>
 </div>
@@ -448,7 +448,7 @@ Version:<span class="w"> </span>...
 <section id="preprocessing">
 <h2>Preprocessing<a class="headerlink" href="#preprocessing" title="Link to this heading">#</a></h2>
 <p>First run the following to preprocess the data and store them as <code class="docutils literal notranslate"><span class="pre">AnnData</span></code> objects:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>snapfish2<span class="w"> </span>preprocess<span class="w"> </span><span class="se">\</span>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>arcfish<span class="w"> </span>preprocess<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>-i<span class="w"> </span><span class="s2">&quot;rep1::data/takei_science_2021/4DNFIW4S8M6J.csv,\</span>
 <span class="s2">        rep2::data/takei_science_2021/4DNFI4LI6NNV.csv,\</span>
 <span class="s2">        rep3::data/takei_science_2021/4DNFIDUJQDNO.csv&quot;</span><span class="w"> </span><span class="se">\</span>
@@ -462,7 +462,7 @@ Version:<span class="w"> </span>...
 <section id="loop-calling">
 <h2>Loop calling<a class="headerlink" href="#loop-calling" title="Link to this heading">#</a></h2>
 <p>Once the processed data are stored in <code class="docutils literal notranslate"><span class="pre">pp_chr_adata</span></code>, loop calling can be done by</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>snapfish2<span class="w"> </span>loop<span class="w"> </span>-i<span class="w"> </span>pp_chr_adata<span class="w"> </span>-o<span class="w"> </span>output/loop_res.bedpe
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>arcfish<span class="w"> </span>loop<span class="w"> </span>-i<span class="w"> </span>pp_chr_adata<span class="w"> </span>-o<span class="w"> </span>output/loop_res.bedpe
 </pre></div>
 </div>
 <p>which stores the loop calling result to <code class="docutils literal notranslate"><span class="pre">output/loop_res.bedpe</span></code>.</p>
@@ -476,14 +476,14 @@ Version:<span class="w"> </span>...
 <li><p><code class="docutils literal notranslate"><span class="pre">outer</span></code>: local background size, by default 50Kb.</p></li>
 </ol>
 <p>For example, to test loops with range from 10Kb to 2Mb, change the command to</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>snapfish2<span class="w"> </span>loop<span class="w"> </span>-i<span class="w"> </span>pp_chr_adata<span class="w"> </span>-o<span class="w"> </span>output/loop_res.bedpe<span class="w"> </span>-lo<span class="w"> </span><span class="m">10000</span><span class="w"> </span>-up<span class="w"> </span><span class="m">1000000</span>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>arcfish<span class="w"> </span>loop<span class="w"> </span>-i<span class="w"> </span>pp_chr_adata<span class="w"> </span>-o<span class="w"> </span>output/loop_res.bedpe<span class="w"> </span>-lo<span class="w"> </span><span class="m">10000</span><span class="w"> </span>-up<span class="w"> </span><span class="m">1000000</span>
 </pre></div>
 </div>
 </section>
 <section id="domain-calling">
 <h2>Domain calling<a class="headerlink" href="#domain-calling" title="Link to this heading">#</a></h2>
 <p>To call TADs, run the following</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>snapfish2<span class="w"> </span>domain<span class="w"> </span>-i<span class="w"> </span>pp_chr_adata<span class="w"> </span>-o<span class="w"> </span>output/domain_res.bedpe
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>arcfish<span class="w"> </span>domain<span class="w"> </span>-i<span class="w"> </span>pp_chr_adata<span class="w"> </span>-o<span class="w"> </span>output/domain_res.bedpe
 </pre></div>
 </div>
 <p>The domain calling result is in <code class="docutils literal notranslate"><span class="pre">output/domain_res.bedpe</span></code>.</p>
@@ -498,7 +498,7 @@ Version:<span class="w"> </span>...
 <section id="compartment-calling">
 <h2>Compartment calling<a class="headerlink" href="#compartment-calling" title="Link to this heading">#</a></h2>
 <p>To call A/B compartments, run the following</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>snapfish2<span class="w"> </span>cpmt<span class="w"> </span>-i<span class="w"> </span>pp_chr_adata<span class="w"> </span>-o<span class="w"> </span>output/cpmt_res.bedpe
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>arcfish<span class="w"> </span>cpmt<span class="w"> </span>-i<span class="w"> </span>pp_chr_adata<span class="w"> </span>-o<span class="w"> </span>output/cpmt_res.bedpe
 </pre></div>
 </div>
 <p>An optional <code class="docutils literal notranslate"><span class="pre">-min</span></code> argument can be passed in to specify the minimum A/B compartment size, by default 0.</p>

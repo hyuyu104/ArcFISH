@@ -1226,11 +1226,11 @@
      "name": "stderr",
      "output_type": "stream",
      "text": [
-      "/Users/redfishhh/Documents/research/MultiplexedFISH/SnapFISH2/arcfish/utils/load.py:207: UserWarning: FOF_CT-core data has less columns than what specified in the header. Additional columns will be ignored.\n",
+      "/Users/redfishhh/Documents/research/MultiplexedFISH/ArcFISH/arcfish/utils/load.py:207: UserWarning: FOF_CT-core data has less columns than what specified in the header. Additional columns will be ignored.\n",
       "  warnings.warn(\n",
-      "/Users/redfishhh/Documents/research/MultiplexedFISH/SnapFISH2/arcfish/utils/load.py:207: UserWarning: FOF_CT-core data has less columns than what specified in the header. Additional columns will be ignored.\n",
+      "/Users/redfishhh/Documents/research/MultiplexedFISH/ArcFISH/arcfish/utils/load.py:207: UserWarning: FOF_CT-core data has less columns than what specified in the header. Additional columns will be ignored.\n",
       "  warnings.warn(\n",
-      "/Users/redfishhh/Documents/research/MultiplexedFISH/SnapFISH2/arcfish/utils/load.py:207: UserWarning: FOF_CT-core data has less columns than what specified in the header. Additional columns will be ignored.\n",
+      "/Users/redfishhh/Documents/research/MultiplexedFISH/ArcFISH/arcfish/utils/load.py:207: UserWarning: FOF_CT-core data has less columns than what specified in the header. Additional columns will be ignored.\n",
       "  warnings.warn(\n"
      ]
     }
@@ -1411,7 +1411,7 @@
      "text": [
       "/var/folders/r1/8ss2m8yd3616s_v12l580jcw0000gn/T/ipykernel_80955/263110440.py:4: RuntimeWarning: All-NaN slice encountered\n",
       "  for i, mat in enumerate(np.nanmedian(np.abs(arr), axis=1)):\n",
-      "/Users/redfishhh/Documents/research/MultiplexedFISH/SnapFISH2/arcfish/utils/eval.py:187: RuntimeWarning: Mean of empty slice\n",
+      "/Users/redfishhh/Documents/research/MultiplexedFISH/ArcFISH/arcfish/utils/eval.py:187: RuntimeWarning: Mean of empty slice\n",
       "  xvars = np.nanmean(np.square(x0), axis=0)\n"
      ]
     },
@@ -1455,7 +1455,7 @@
      "name": "stderr",
      "output_type": "stream",
      "text": [
-      "/Users/redfishhh/Documents/research/MultiplexedFISH/SnapFISH2/arcfish/utils/eval.py:187: RuntimeWarning: Mean of empty slice\n",
+      "/Users/redfishhh/Documents/research/MultiplexedFISH/ArcFISH/arcfish/utils/eval.py:187: RuntimeWarning: Mean of empty slice\n",
       "  xvars = np.nanmean(np.square(x0), axis=0)\n"
      ]
     },
@@ -1473,7 +1473,7 @@
      "name": "stderr",
      "output_type": "stream",
      "text": [
-      "/Users/redfishhh/Documents/research/MultiplexedFISH/SnapFISH2/arcfish/utils/eval.py:187: RuntimeWarning: Mean of empty slice\n",
+      "/Users/redfishhh/Documents/research/MultiplexedFISH/ArcFISH/arcfish/utils/eval.py:187: RuntimeWarning: Mean of empty slice\n",
       "  xvars = np.nanmean(np.square(x0), axis=0)\n"
      ]
     }

@@ -1,6 +1,0 @@
-﻿snapfish2.tl.overlap
-====================
-
-.. currentmodule:: snapfish2.tl
-
-.. autofunction:: overlap

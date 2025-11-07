@@ -1,6 +1,0 @@
-﻿snapfish2.pl.compare\_loops
-===========================
-
-.. currentmodule:: snapfish2.pl
-
-.. autofunction:: compare_loops

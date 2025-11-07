@@ -1,6 +1,0 @@
-﻿snapfish2.tl.signal\_overlap
-============================
-
-.. currentmodule:: snapfish2.tl
-
-.. autofunction:: signal_overlap

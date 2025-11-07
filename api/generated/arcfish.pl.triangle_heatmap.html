@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>arcfish.pl.triangle_heatmap &#8212; SnapFISH2 2.0.0 documentation</title>
+    <title>arcfish.pl.triangle_heatmap &#8212; ArcFISH 2.0.0 documentation</title>
   
   
   
@@ -116,7 +116,7 @@
   
   
   
-    <p class="title logo__title">SnapFISH2</p>
+    <p class="title logo__title">ArcFISH</p>
   
 </a></div>
     
@@ -477,7 +477,7 @@ if <cite>height</cite> is None, infer <cite>height</cite> from <cite>width</cite
 <li><p><strong>mat</strong> (<em>np.ndarray</em>) – p by p matrix to plot.</p></li>
 <li><p><strong>df1d</strong> (<em>pd.DataFrame</em>) – 1D genomic location information. Must contain “Chrom_Start” and
 “Chrom_End” as columns. Can first call
-<code class="xref py py-func docutils literal notranslate"><span class="pre">snapfish2.pp.FOF_CT_Loader.create_adata()</span></code> to
+<a class="reference internal" href="arcfish.pp.FOF_CT_Loader.html#arcfish.pp.FOF_CT_Loader.create_adata" title="arcfish.pp.FOF_CT_Loader.create_adata"><code class="xref py py-func docutils literal notranslate"><span class="pre">arcfish.pp.FOF_CT_Loader.create_adata()</span></code></a> to
 create an adata object and then use the <cite>var</cite> field as <cite>df1d</cite>.</p></li>
 <li><p><strong>cut_hi</strong> (<em>None</em><em> | </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Only pixels with 1D genomic distance below <cite>cut_hi</cite> will be
 plotted. Plot all pixels if <cite>cut_hi</cite> is None, by default None.</p></li>

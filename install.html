@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Installation &#8212; SnapFISH2 2.0.0 documentation</title>
+    <title>Installation &#8212; ArcFISH 2.0.0 documentation</title>
   
   
   
@@ -53,7 +53,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Tutorials" href="tutorial/index.html" />
-    <link rel="prev" title="SnapFISH2: An integrative analysis tool for multiplexed FISH" href="index.html" />
+    <link rel="prev" title="ArcFISH: An integrative analysis tool for multiplexed FISH" href="index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="2.0.0" />
@@ -118,7 +118,7 @@
   
   
   
-    <p class="title logo__title">SnapFISH2</p>
+    <p class="title logo__title">ArcFISH</p>
   
 </a></div>
     
@@ -401,18 +401,18 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Link to this heading">#</a></h1>
-<section id="create-an-environment-and-install-snapfish2">
-<h2>Create an environment and install SnapFISH2<a class="headerlink" href="#create-an-environment-and-install-snapfish2" title="Link to this heading">#</a></h2>
-<p>It is recommended to first create a new Python environment and then install <code class="docutils literal notranslate"><span class="pre">SnapFISH2</span></code>. This can be accomplished either by <code class="docutils literal notranslate"><span class="pre">conda</span></code> or Python’s <code class="docutils literal notranslate"><span class="pre">venv</span></code>:</p>
+<section id="create-an-environment-and-install-arcfish">
+<h2>Create an environment and install ArcFISH<a class="headerlink" href="#create-an-environment-and-install-arcfish" title="Link to this heading">#</a></h2>
+<p>It is recommended to first create a new Python environment and then install <code class="docutils literal notranslate"><span class="pre">ArcFISH</span></code>. This can be accomplished either by <code class="docutils literal notranslate"><span class="pre">conda</span></code> or Python’s <code class="docutils literal notranslate"><span class="pre">venv</span></code>:</p>
 <div class="sphinx-tabs docutils container">
-<div aria-label="Tabbed content" class="closeable" role="tablist"><button aria-controls="panel-0-Y29uZGE=" aria-selected="true" class="sphinx-tabs-tab group-tab" id="tab-0-Y29uZGE=" name="Y29uZGE=" role="tab" tabindex="0">conda</button><button aria-controls="panel-0-dmVudg==" aria-selected="false" class="sphinx-tabs-tab group-tab" id="tab-0-dmVudg==" name="dmVudg==" role="tab" tabindex="-1">venv</button></div><div aria-labelledby="tab-0-Y29uZGE=" class="sphinx-tabs-panel group-tab" id="panel-0-Y29uZGE=" name="Y29uZGE=" role="tabpanel" tabindex="0"><div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>create<span class="w"> </span>--name<span class="w"> </span>snapfish2_env<span class="w"> </span><span class="nv">python</span><span class="o">==</span><span class="m">3</span>.12.2
-conda<span class="w"> </span>activate<span class="w"> </span>snapfish2_env
-python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>snapfish2
+<div aria-label="Tabbed content" class="closeable" role="tablist"><button aria-controls="panel-0-Y29uZGE=" aria-selected="true" class="sphinx-tabs-tab group-tab" id="tab-0-Y29uZGE=" name="Y29uZGE=" role="tab" tabindex="0">conda</button><button aria-controls="panel-0-dmVudg==" aria-selected="false" class="sphinx-tabs-tab group-tab" id="tab-0-dmVudg==" name="dmVudg==" role="tab" tabindex="-1">venv</button></div><div aria-labelledby="tab-0-Y29uZGE=" class="sphinx-tabs-panel group-tab" id="panel-0-Y29uZGE=" name="Y29uZGE=" role="tabpanel" tabindex="0"><div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>create<span class="w"> </span>--name<span class="w"> </span>arcfish_env<span class="w"> </span><span class="nv">python</span><span class="o">==</span><span class="m">3</span>.12.2
+conda<span class="w"> </span>activate<span class="w"> </span>arcfish_env
+python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>arcfish
 </pre></div>
 </div>
-</div><div aria-labelledby="tab-0-dmVudg==" class="sphinx-tabs-panel group-tab" hidden="true" id="panel-0-dmVudg==" name="dmVudg==" role="tabpanel" tabindex="0"><div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>snapfish2_env
-<span class="nb">source</span><span class="w"> </span>.snapfish2_env/bin/activate
-python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>snapfish2
+</div><div aria-labelledby="tab-0-dmVudg==" class="sphinx-tabs-panel group-tab" hidden="true" id="panel-0-dmVudg==" name="dmVudg==" role="tabpanel" tabindex="0"><div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>arcfish_env
+<span class="nb">source</span><span class="w"> </span>.arcfish_env/bin/activate
+python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>arcfish
 </pre></div>
 </div>
 </div></div>
@@ -421,17 +421,17 @@ python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </sp
 <h2>Local installation for development<a class="headerlink" href="#local-installation-for-development" title="Link to this heading">#</a></h2>
 <p>To install the latest version on github and the dependencies to build the sphinx documentation:</p>
 <div class="sphinx-tabs docutils container">
-<div aria-label="Tabbed content" class="closeable" role="tablist"><button aria-controls="panel-1-Y29uZGE=" aria-selected="true" class="sphinx-tabs-tab group-tab" id="tab-1-Y29uZGE=" name="Y29uZGE=" role="tab" tabindex="0">conda</button><button aria-controls="panel-1-dmVudg==" aria-selected="false" class="sphinx-tabs-tab group-tab" id="tab-1-dmVudg==" name="dmVudg==" role="tab" tabindex="-1">venv</button></div><div aria-labelledby="tab-1-Y29uZGE=" class="sphinx-tabs-panel group-tab" id="panel-1-Y29uZGE=" name="Y29uZGE=" role="tabpanel" tabindex="0"><div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>create<span class="w"> </span>--name<span class="w"> </span>snapfish2_env<span class="w"> </span><span class="nv">python</span><span class="o">==</span><span class="m">3</span>.12.2
-conda<span class="w"> </span>activate<span class="w"> </span>snapfish2_env
-git<span class="w"> </span>clone<span class="w"> </span>https://github.com/hyuyu104/snapfish2
-<span class="nb">cd</span><span class="w"> </span>snapfish2
+<div aria-label="Tabbed content" class="closeable" role="tablist"><button aria-controls="panel-1-Y29uZGE=" aria-selected="true" class="sphinx-tabs-tab group-tab" id="tab-1-Y29uZGE=" name="Y29uZGE=" role="tab" tabindex="0">conda</button><button aria-controls="panel-1-dmVudg==" aria-selected="false" class="sphinx-tabs-tab group-tab" id="tab-1-dmVudg==" name="dmVudg==" role="tab" tabindex="-1">venv</button></div><div aria-labelledby="tab-1-Y29uZGE=" class="sphinx-tabs-panel group-tab" id="panel-1-Y29uZGE=" name="Y29uZGE=" role="tabpanel" tabindex="0"><div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>create<span class="w"> </span>--name<span class="w"> </span>arcfish_env<span class="w"> </span><span class="nv">python</span><span class="o">==</span><span class="m">3</span>.12.2
+conda<span class="w"> </span>activate<span class="w"> </span>arcfish_env
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/hyuyu104/arcfish
+<span class="nb">cd</span><span class="w"> </span>arcfish
 python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[docs]&quot;</span>
 </pre></div>
 </div>
-</div><div aria-labelledby="tab-1-dmVudg==" class="sphinx-tabs-panel group-tab" hidden="true" id="panel-1-dmVudg==" name="dmVudg==" role="tabpanel" tabindex="0"><div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>snapfish2_env
-<span class="nb">source</span><span class="w"> </span>.snapfish2_env/bin/activate
-git<span class="w"> </span>clone<span class="w"> </span>https://github.com/hyuyu104/snapfish2
-<span class="nb">cd</span><span class="w"> </span>snapfish2
+</div><div aria-labelledby="tab-1-dmVudg==" class="sphinx-tabs-panel group-tab" hidden="true" id="panel-1-dmVudg==" name="dmVudg==" role="tabpanel" tabindex="0"><div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>arcfish_env
+<span class="nb">source</span><span class="w"> </span>.arcfish_env/bin/activate
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/hyuyu104/arcfish
+<span class="nb">cd</span><span class="w"> </span>arcfish
 python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[docs]&quot;</span>
 </pre></div>
 </div>
@@ -456,7 +456,7 @@ python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </sp
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">SnapFISH2: An integrative analysis tool for multiplexed FISH</p>
+        <p class="prev-next-title">ArcFISH: An integrative analysis tool for multiplexed FISH</p>
       </div>
     </a>
     <a class="right-next"
@@ -487,7 +487,7 @@ python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </sp
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#create-an-environment-and-install-snapfish2">Create an environment and install SnapFISH2</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#create-an-environment-and-install-arcfish">Create an environment and install ArcFISH</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#local-installation-for-development">Local installation for development</a></li>
 </ul>
   </nav></div>

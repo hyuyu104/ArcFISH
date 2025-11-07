@@ -1,6 +1,0 @@
-﻿snapfish2.pl.domain\_boundary
-=============================
-
-.. currentmodule:: snapfish2.pl
-
-.. autofunction:: domain_boundary
