@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Installation &#8212; ArcFISH 2.0.0 documentation</title>
+    <title>Installation &#8212; ArcFISH 1.0.0 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=51b770b3"></script>
+    <script src="_static/documentation_options.js?v=8d563738"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -53,10 +53,10 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Tutorials" href="tutorial/index.html" />
-    <link rel="prev" title="ArcFISH: An integrative analysis tool for multiplexed FISH" href="index.html" />
+    <link rel="prev" title="ArcFISH: accurate and robust 3D genome feature discovery from chromatin tracing data" href="index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="2.0.0" />
+  <meta name="docsearch:version" content="1.0.0" />
   </head>
   
   
@@ -122,26 +122,6 @@
   
 </a></div>
     
-      <div class="navbar-item">
-<div class="version-switcher__container dropdown pst-js-only">
-  <button id="pst-version-switcher-button-2"
-    type="button"
-    class="version-switcher__button btn btn-sm dropdown-toggle"
-    data-bs-toggle="dropdown"
-    aria-haspopup="listbox"
-    aria-controls="pst-version-switcher-list-2"
-    aria-label="Version switcher list"
-  >
-    Choose version  <!-- this text may get changed later by javascript -->
-    <span class="caret"></span>
-  </button>
-  <div id="pst-version-switcher-list-2"
-    class="version-switcher__menu dropdown-menu list-group-flush py-0"
-    role="listbox" aria-labelledby="pst-version-switcher-button-2">
-    <!-- dropdown will be populated by javascript on page load -->
-  </div>
-</div></div>
-    
   </div>
   
   <div class=" navbar-header-items">
@@ -167,22 +147,15 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="workflow.html">
-    Workflow
-  </a>
-</li>
-
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="figures/index.html">
-    Reproducibility
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="api/index.html">
     API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="contact.html">
+    Contact
   </a>
 </li>
 
@@ -290,22 +263,15 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="workflow.html">
-    Workflow
-  </a>
-</li>
-
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="figures/index.html">
-    Reproducibility
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="api/index.html">
     API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="contact.html">
+    Contact
   </a>
 </li>
 
@@ -401,9 +367,32 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Link to this heading">#</a></h1>
+<section id="python-environment-management">
+<h2>Python Environment Management<a class="headerlink" href="#python-environment-management" title="Link to this heading">#</a></h2>
+<p>Before installing ArcFISH, it’s highly recommended to create an isolated Python environment. This prevents conflicts between different packages and ensures reproducible installations. You can use either <strong>conda</strong> or <strong>venv</strong> for this purpose:</p>
+<section id="conda">
+<h3>Conda<a class="headerlink" href="#conda" title="Link to this heading">#</a></h3>
+<p><strong>Conda</strong> is a popular package and environment manager that comes with Anaconda or Miniconda. It can manage packages from multiple languages (not just Python) and handles complex dependencies efficiently.</p>
+<p><strong>Installation:</strong></p>
+<ul class="simple">
+<li><p>Install <a class="reference external" href="https://docs.conda.io/en/latest/miniconda.html">Miniconda</a> (lightweight) or <a class="reference external" href="https://www.anaconda.com/products/distribution">Anaconda</a> (full distribution)</p></li>
+<li><p>Conda provides pre-compiled packages, which can be faster to install and more reliable across different systems</p></li>
+</ul>
+</section>
+<section id="python-venv">
+<h3>Python venv<a class="headerlink" href="#python-venv" title="Link to this heading">#</a></h3>
+<p><strong>venv</strong> is Python’s built-in virtual environment tool. It’s lightweight and comes standard with Python 3.3+, requiring no additional installation.</p>
+<p><strong>Features:</strong></p>
+<ul class="simple">
+<li><p>Creates isolated Python environments using only pip for package management</p></li>
+<li><p>Smaller footprint and faster environment creation</p></li>
+<li><p>Uses the same Python version as your system installation</p></li>
+</ul>
+</section>
+</section>
 <section id="create-an-environment-and-install-arcfish">
 <h2>Create an environment and install ArcFISH<a class="headerlink" href="#create-an-environment-and-install-arcfish" title="Link to this heading">#</a></h2>
-<p>It is recommended to first create a new Python environment and then install <code class="docutils literal notranslate"><span class="pre">ArcFISH</span></code>. This can be accomplished either by <code class="docutils literal notranslate"><span class="pre">conda</span></code> or Python’s <code class="docutils literal notranslate"><span class="pre">venv</span></code>:</p>
+<p>Choose one of the following methods to create a new Python environment and install <code class="docutils literal notranslate"><span class="pre">ArcFISH</span></code>:</p>
 <div class="sphinx-tabs docutils container">
 <div aria-label="Tabbed content" class="closeable" role="tablist"><button aria-controls="panel-0-Y29uZGE=" aria-selected="true" class="sphinx-tabs-tab group-tab" id="tab-0-Y29uZGE=" name="Y29uZGE=" role="tab" tabindex="0">conda</button><button aria-controls="panel-0-dmVudg==" aria-selected="false" class="sphinx-tabs-tab group-tab" id="tab-0-dmVudg==" name="dmVudg==" role="tab" tabindex="-1">venv</button></div><div aria-labelledby="tab-0-Y29uZGE=" class="sphinx-tabs-panel group-tab" id="panel-0-Y29uZGE=" name="Y29uZGE=" role="tabpanel" tabindex="0"><div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>create<span class="w"> </span>--name<span class="w"> </span>arcfish_env<span class="w"> </span><span class="nv">python</span><span class="o">==</span><span class="m">3</span>.12.2
 conda<span class="w"> </span>activate<span class="w"> </span>arcfish_env
@@ -456,7 +445,7 @@ python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </sp
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">ArcFISH: An integrative analysis tool for multiplexed FISH</p>
+        <p class="prev-next-title">ArcFISH: accurate and robust 3D genome feature discovery from chromatin tracing data</p>
       </div>
     </a>
     <a class="right-next"
@@ -487,6 +476,11 @@ python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </sp
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#python-environment-management">Python Environment Management</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#conda">Conda</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#python-venv">Python venv</a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#create-an-environment-and-install-arcfish">Create an environment and install ArcFISH</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#local-installation-for-development">Local installation for development</a></li>
 </ul>

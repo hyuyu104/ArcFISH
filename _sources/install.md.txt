@@ -1,8 +1,27 @@
 # Installation
 
+## Python Environment Management
+
+Before installing ArcFISH, it's highly recommended to create an isolated Python environment. This prevents conflicts between different packages and ensures reproducible installations. You can use either **conda** or **venv** for this purpose:
+
+### Conda
+**Conda** is a popular package and environment manager that comes with Anaconda or Miniconda. It can manage packages from multiple languages (not just Python) and handles complex dependencies efficiently.
+
+**Installation:**
+- Install [Miniconda](https://docs.conda.io/en/latest/miniconda.html) (lightweight) or [Anaconda](https://www.anaconda.com/products/distribution) (full distribution)
+- Conda provides pre-compiled packages, which can be faster to install and more reliable across different systems
+
+### Python venv
+**venv** is Python's built-in virtual environment tool. It's lightweight and comes standard with Python 3.3+, requiring no additional installation.
+
+**Features:**
+- Creates isolated Python environments using only pip for package management
+- Smaller footprint and faster environment creation
+- Uses the same Python version as your system installation
+
 ## Create an environment and install ArcFISH
 
-It is recommended to first create a new Python environment and then install `ArcFISH`. This can be accomplished either by `conda` or Python's `venv`:
+Choose one of the following methods to create a new Python environment and install `ArcFISH`:
 ::::{tabs}
 :::{group-tab} conda
 ```sh

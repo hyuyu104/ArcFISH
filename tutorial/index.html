@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Tutorials &#8212; ArcFISH 2.0.0 documentation</title>
+    <title>Tutorials &#8212; ArcFISH 1.0.0 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=51b770b3"></script>
+    <script src="../_static/documentation_options.js?v=8d563738"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -52,11 +52,11 @@
     <script>DOCUMENTATION_OPTIONS.pagename = 'tutorial/index';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="ArcFISH as a command line tool" href="cli_usage.html" />
+    <link rel="next" title="Loop and domain calling" href="loop_domain.html" />
     <link rel="prev" title="Installation" href="../install.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="2.0.0" />
+  <meta name="docsearch:version" content="1.0.0" />
   </head>
   
   
@@ -122,26 +122,6 @@
   
 </a></div>
     
-      <div class="navbar-item">
-<div class="version-switcher__container dropdown pst-js-only">
-  <button id="pst-version-switcher-button-2"
-    type="button"
-    class="version-switcher__button btn btn-sm dropdown-toggle"
-    data-bs-toggle="dropdown"
-    aria-haspopup="listbox"
-    aria-controls="pst-version-switcher-list-2"
-    aria-label="Version switcher list"
-  >
-    Choose version  <!-- this text may get changed later by javascript -->
-    <span class="caret"></span>
-  </button>
-  <div id="pst-version-switcher-list-2"
-    class="version-switcher__menu dropdown-menu list-group-flush py-0"
-    role="listbox" aria-labelledby="pst-version-switcher-button-2">
-    <!-- dropdown will be populated by javascript on page load -->
-  </div>
-</div></div>
-    
   </div>
   
   <div class=" navbar-header-items">
@@ -167,22 +147,15 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../workflow.html">
-    Workflow
-  </a>
-</li>
-
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../figures/index.html">
-    Reproducibility
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="../api/index.html">
     API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../contact.html">
+    Contact
   </a>
 </li>
 
@@ -290,22 +263,15 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../workflow.html">
-    Workflow
-  </a>
-</li>
-
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../figures/index.html">
-    Reproducibility
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="../api/index.html">
     API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../contact.html">
+    Contact
   </a>
 </li>
 
@@ -353,10 +319,14 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="cli_usage.html">ArcFISH as a command line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="loop_domain.html">Loop and domain calling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cpmt.html">A/B compartment calling</a></li>
+
+
+
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="load_storage.html">Data loading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli_usage.html">ArcFISH as a command line tool</a></li>
 </ul>
 </div>
 </nav></div>
@@ -416,6 +386,25 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="tutorials">
 <h1>Tutorials<a class="headerlink" href="#tutorials" title="Link to this heading">#</a></h1>
+<section id="jupyter-notebook-usage">
+<h2>Jupyter notebook usage<a class="headerlink" href="#jupyter-notebook-usage" title="Link to this heading">#</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="loop_domain.html">Loop and domain calling</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="loop_domain.html#Loading-FOF_CT-core-file">Loading FOF_CT-core file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loop_domain.html#Loop-calling">Loop calling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loop_domain.html#TAD-calling">TAD calling</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="cpmt.html">A/B compartment calling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cpmt.html#Load-and-preprocess-the-data">Load and preprocess the data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cpmt.html#id1">A/B compartment calling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cpmt.html#Computation-speed-up-with-dask">Computation speed up with dask</a></li>
+</ul>
+</div>
+</section>
+<section id="command-line-usage">
+<h2>Command line usage<a class="headerlink" href="#command-line-usage" title="Link to this heading">#</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="cli_usage.html">ArcFISH as a command line tool</a><ul>
@@ -423,21 +412,6 @@
 <li class="toctree-l2"><a class="reference internal" href="cli_usage.html#loop-calling">Loop calling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cli_usage.html#domain-calling">Domain calling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cli_usage.html#compartment-calling">Compartment calling</a></li>
-</ul>
-</li>
-</ul>
-</div>
-<section id="example-analysis">
-<h2>Example analysis<a class="headerlink" href="#example-analysis" title="Link to this heading">#</a></h2>
-<div class="toctree-wrapper compound">
-</div>
-</section>
-<section id="data-loading-and-storage">
-<h2>Data loading and storage<a class="headerlink" href="#data-loading-and-storage" title="Link to this heading">#</a></h2>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="load_storage.html">Data loading</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="load_storage.html#Loading-one-or-multiple-csv">Loading one or multiple csv</a></li>
 </ul>
 </li>
 </ul>
@@ -465,11 +439,11 @@
       </div>
     </a>
     <a class="right-next"
-       href="cli_usage.html"
+       href="loop_domain.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">ArcFISH as a command line tool</p>
+        <p class="prev-next-title">Loop and domain calling</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -492,8 +466,8 @@
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example-analysis">Example analysis</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-loading-and-storage">Data loading and storage</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#jupyter-notebook-usage">Jupyter notebook usage</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#command-line-usage">Command line usage</a></li>
 </ul>
   </nav></div>
 

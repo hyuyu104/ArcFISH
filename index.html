@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>ArcFISH: An integrative analysis tool for multiplexed FISH &#8212; ArcFISH 2.0.0 documentation</title>
+    <title>ArcFISH: accurate and robust 3D genome feature discovery from chromatin tracing data &#8212; ArcFISH 1.0.0 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=51b770b3"></script>
+    <script src="_static/documentation_options.js?v=8d563738"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -55,7 +55,7 @@
     <link rel="next" title="Installation" href="install.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="2.0.0" />
+  <meta name="docsearch:version" content="1.0.0" />
   </head>
   
   
@@ -121,26 +121,6 @@
   
 </a></div>
     
-      <div class="navbar-item">
-<div class="version-switcher__container dropdown pst-js-only">
-  <button id="pst-version-switcher-button-2"
-    type="button"
-    class="version-switcher__button btn btn-sm dropdown-toggle"
-    data-bs-toggle="dropdown"
-    aria-haspopup="listbox"
-    aria-controls="pst-version-switcher-list-2"
-    aria-label="Version switcher list"
-  >
-    Choose version  <!-- this text may get changed later by javascript -->
-    <span class="caret"></span>
-  </button>
-  <div id="pst-version-switcher-list-2"
-    class="version-switcher__menu dropdown-menu list-group-flush py-0"
-    role="listbox" aria-labelledby="pst-version-switcher-button-2">
-    <!-- dropdown will be populated by javascript on page load -->
-  </div>
-</div></div>
-    
   </div>
   
   <div class=" navbar-header-items">
@@ -166,22 +146,15 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="workflow.html">
-    Workflow
-  </a>
-</li>
-
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="figures/index.html">
-    Reproducibility
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="api/index.html">
     API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="contact.html">
+    Contact
   </a>
 </li>
 
@@ -287,22 +260,15 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="workflow.html">
-    Workflow
-  </a>
-</li>
-
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="figures/index.html">
-    Reproducibility
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="api/index.html">
     API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="contact.html">
+    Contact
   </a>
 </li>
 
@@ -372,13 +338,25 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section class="tex2jax_ignore mathjax_ignore" id="arcfish-an-integrative-analysis-tool-for-multiplexed-fish">
-<h1>ArcFISH: An integrative analysis tool for multiplexed FISH<a class="headerlink" href="#arcfish-an-integrative-analysis-tool-for-multiplexed-fish" title="Link to this heading">#</a></h1>
+  <section class="tex2jax_ignore mathjax_ignore" id="arcfish-accurate-and-robust-3d-genome-feature-discovery-from-chromatin-tracing-data">
+<h1>ArcFISH: accurate and robust 3D genome feature discovery from chromatin tracing data<a class="headerlink" href="#arcfish-accurate-and-robust-3d-genome-feature-discovery-from-chromatin-tracing-data" title="Link to this heading">#</a></h1>
+<p>ArcFISH is a computational tool to identify chromatin loops, TADs, and A/B compartments from chromatin tracing data, where the chromatin is in-situ hybridized by fluorescence probes and imaged using high-resolution microscopes (please see the <a class="reference external" href="https://data.4dnucleome.org/resources/data-collections/chromatin-tracing-datasets">4DN data portal</a> for a collection of available datasets).</p>
 <div class="sd-container-fluid sd-sphinx-override sd-mb-4 docutils">
 <div class="sd-row sd-row-cols-2 sd-row-cols-xs-2 sd-row-cols-sm-2 sd-row-cols-md-2 sd-row-cols-lg-2 docutils">
 <div class="sd-col sd-d-flex-column sd-col-9 sd-col-xs-9 sd-col-sm-9 sd-col-md-9 sd-col-lg-9 docutils">
-<p>ArcFISH is a computational tool to identify chromatin loops, TADs, and A/B compartments from multiplexed DNA-FISH, where the chromatin is in-situ hybridized by fluorescence probes and imaged using high-resolution microscopes (please see the <a class="reference external" href="https://data.4dnucleome.org/resources/data-collections/chromatin-tracing-datasets">4DN data portal</a> for a collection of available datasets). ArcFISH can also be used to call differential loops, TADs, or A/B compartments from two experiment conditions.</p>
-<p>DNA-FISH data are stored as <a class="reference external" href="https://docs.dask.org/en/stable/">dask arrays</a> in ArcFISH and thus adapts well with computing clusters and supports larger-than-memory storage. Algorithmically, by processing each imaging axis separately, ArcFISH is robust to heterogeneous measurement errors and can output consistent results under different noise levels.</p>
+<p>ArcFISH is designed to handle the heterogenous measurement error in different axes. The workflow involves:</p>
+<ol class="arabic simple">
+<li><p>Estimate a weight for each axis</p></li>
+<li><p>Filter our outliers and perform 1D bias normalization</p></li>
+<li><p>Process each axis separately:</p>
+<ul class="simple">
+<li><p>Loops: F-test based on local background</p></li>
+<li><p>TADs: F-test to compare inter-region and intra-region interactions</p></li>
+<li><p>A/B compartments: second eigenvector</p></li>
+</ul>
+</li>
+<li><p>Combine axis level information with weights estimated in step 1</p></li>
+</ol>
 </div>
 <div class="sd-col sd-d-flex-row sd-col-3 sd-col-xs-3 sd-col-sm-3 sd-col-md-3 sd-col-lg-3 docutils">
 <div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm docutils">
@@ -389,9 +367,8 @@ Contents</div>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/index.html">Tutorials</a></li>
-<li class="toctree-l1"><a class="reference internal" href="workflow.html">Workflow</a></li>
-<li class="toctree-l1"><a class="reference internal" href="figures/index.html">Reproducibility</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api/index.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contact.html">Contact</a></li>
 </ul>
 </div>
 </div>
