@@ -99,12 +99,12 @@ html_theme_options = {
     "github_url": "https://github.com/hyuhyu104/DNEYET",
     "header_links_before_dropdown": 6,
 
-    "navbar_start": ["navbar-logo", "version-switcher"],
+    "navbar_start": ["navbar-logo"],
     "navbar_end": ["theme-switcher", "navbar-icon-links"],
     "navbar_align": "left",
 }
 
 html_sidebars = {
     "install": [],
-    "workflow": [],
+    "contact": [],
 }
