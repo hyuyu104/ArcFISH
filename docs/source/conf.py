@@ -96,7 +96,7 @@ html_theme_options = {
         "alt_text": "ArcFISH",
     },
     
-    "github_url": "https://github.com/hyuhyu104/DNEYET",
+    "github_url": "https://github.com/hyuyu104/ArcFISH",
     "header_links_before_dropdown": 6,
 
     "navbar_start": ["navbar-logo"],
