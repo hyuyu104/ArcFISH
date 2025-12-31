@@ -3,8 +3,8 @@ import pandas as pd
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator
 
-from ..utils.load import FOF_CT_Loader
-from ..utils.eval import median_pdist
+from arcfish.utils.load import FOF_CT_Loader
+from arcfish.utils.eval import median_pdist
 
 def cast_to_distmat(
     X:np.ndarray, func:Callable=np.nanmean

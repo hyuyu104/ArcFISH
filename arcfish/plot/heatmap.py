@@ -12,9 +12,9 @@ from matplotlib.typing import ColorType
 from anndata import AnnData
 
 from .utils import cast_to_distmat, rotate_df
-from ..utils.eval import median_pdist, filter_normalize
-from ..tools.loop import LoopTestAbstract
-from ..tools.domain import TADCaller
+from arcfish.utils.eval import median_pdist, filter_normalize
+from arcfish.tools.loop import LoopTestAbstract
+from arcfish.tools.domain import TADCaller
 
 
 def pairwise_heatmap(

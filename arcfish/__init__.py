@@ -14,7 +14,7 @@ sys.modules.update({
     for m in ["pp", "tl", "wr", "pl"]
 })
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 
 class _settings:

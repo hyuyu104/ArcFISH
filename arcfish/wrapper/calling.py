@@ -1,8 +1,8 @@
 from pathlib import Path
 import pandas as pd
 
-from .. import utils as pp
-from .. import tools as tl
+from arcfish import utils as pp
+from arcfish import tools as tl
 
 
 def caller_wrapper(

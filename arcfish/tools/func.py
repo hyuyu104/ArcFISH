@@ -3,7 +3,7 @@ from itertools import combinations
 import numpy as np
 import pandas as pd
 from scipy.integrate import quad
-from .. import utils as pp
+from arcfish import utils as pp
 
 __all__ = [
     "overlap",

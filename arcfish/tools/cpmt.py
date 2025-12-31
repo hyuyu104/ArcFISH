@@ -12,8 +12,8 @@ from anndata import AnnData
 import dask.array as da
 import requests
 
-from ..utils.eval import axis_weight, filter_normalize
-from ..tools.func import overlap
+from arcfish.utils.eval import axis_weight, filter_normalize
+from arcfish.tools.func import overlap
 
 
 class ABCaller:

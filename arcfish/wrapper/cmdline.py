@@ -3,8 +3,8 @@ import argparse
 import pandas as pd
 import anndata as ad
 
-from .. import utils as pp
-from .. import tools as tl
+from arcfish import utils as pp
+from arcfish import tools as tl
 
 
 def _parse_file_paths(file_paths):

@@ -8,7 +8,7 @@ from anndata import AnnData, concat
 from scipy import stats
 from statsmodels.stats import multitest as multi
 
-from ..utils.eval import (
+from arcfish.utils.eval import (
     axis_weight, 
     filter_normalize, 
     joint_filter_normalize

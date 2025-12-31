@@ -8,7 +8,7 @@ from statsmodels.stats import multitest as multi
 from anndata import AnnData, concat
 
 from .loop import DiffLoop
-from ..utils.eval import (
+from arcfish.utils.eval import (
     axis_weight, 
     median_pdist, 
     filter_normalize,
